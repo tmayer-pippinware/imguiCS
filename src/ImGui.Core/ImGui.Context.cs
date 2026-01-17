@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace ImGui;
 
@@ -35,6 +36,7 @@ public sealed class ImGuiContext
     public ImGuiID NavInitResultId;
     public bool NavMoveRequest;
     internal ImGuiNextWindowData NextWindowData;
+    internal readonly Dictionary<ImGuiID, ImGuiInputTextState> InputTextStates = new();
 
     public ImGuiContext()
     {

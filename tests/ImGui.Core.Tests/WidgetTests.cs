@@ -20,6 +20,46 @@ public class WidgetTests
     }
 
     [Fact]
+    public void SmallButton_press()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Buttons");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        Assert.True(ImGui.SmallButton("Small"));
+        ImGui.End();
+    }
+
+    [Fact]
+    public void ArrowButton_press()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Buttons");
+        ImGui.AddMousePosEvent(ImGui.GetCursorScreenPos().x + 1, ImGui.GetCursorScreenPos().y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        Assert.True(ImGui.ArrowButton("Arrow", ImGuiDir.ImGuiDir_Right));
+        ImGui.End();
+    }
+
+    [Fact]
+    public void InvisibleButton_registers_click_without_draw()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Invis");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        var pressed = ImGui.InvisibleButton("area", new ImVec2(20, 10));
+        Assert.True(pressed);
+        Assert.Empty(ImGui.GetWindowDrawList().VtxBuffer);
+        ImGui.End();
+    }
+
+    [Fact]
     public void Button_uses_visible_label_with_hash_suffix()
     {
         ImGui.CreateContext();
@@ -271,6 +311,58 @@ public class WidgetTests
         Assert.True(changed);
         Assert.InRange(val, 0.4f, 0.6f);
         ImGui.End();
+    }
+
+    [Fact]
+    public void DragFloat_updates_value_on_drag()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Drag");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMousePosEvent(pos.x + 20, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        float v = 0;
+        var changed = ImGui.DragFloat("Drag", ref v, 1.0f, -10.0f, 10.0f);
+        Assert.True(changed);
+        Assert.True(v > 0);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void InputText_accepts_characters_and_backspace()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Input");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.AddInputCharacter('X');
+        ImGui.AddKeyEvent(ImGuiKey.ImGuiKey_Backspace, true);
+        ImGui.NewFrame();
+        string text = "Hi";
+        bool changed = ImGui.InputText("Name", ref text);
+        ImGui.End();
+        Assert.True(changed);
+        Assert.Equal("Hi", text);
+    }
+
+    [Fact]
+    public void Combo_cycles_selection_on_activation()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Combo");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        int current = 0;
+        var items = new[] { "A", "B", "C" };
+        bool changed = ImGui.Combo("Options", ref current, items);
+        ImGui.End();
+        Assert.True(changed);
+        Assert.Equal(1, current);
     }
 
     [Fact]

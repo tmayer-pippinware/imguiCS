@@ -100,6 +100,18 @@ internal struct ImGuiGroupData
     public ImVec2 GroupMax;
 }
 
+internal sealed class ImGuiInputTextState
+{
+    public StbTextBuffer Buffer;
+    public StbTexteditState EditState;
+
+    public ImGuiInputTextState(string initial)
+    {
+        Buffer = new StbTextBuffer(initial);
+        ImStbTextEdit.stb_textedit_initialize_state(ref EditState, true);
+    }
+}
+
 internal static class ImHash
 {
     public static ImGuiID Hash(ReadOnlySpan<char> data, ImGuiID seed = 0)

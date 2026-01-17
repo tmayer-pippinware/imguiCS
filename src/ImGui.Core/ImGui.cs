@@ -921,7 +921,7 @@ public static partial class ImGui
             ctx.Style.Alpha = ctx.StyleAlphaStack.Pop();
     }
 
-    public static bool Button(string label)
+    public static bool Button(string label, bool repeat = false)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
@@ -947,7 +947,7 @@ public static partial class ImGui
         ref var io = ref ctx.IO;
         bool disabled = ctx.DisabledDepth > 0;
         bool hovered, held, pressed;
-        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled);
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled, repeat);
         uint col = GetColorU32(ImGuiCol_.ImGuiCol_Button);
         if (hovered && io.MouseDown[0])
             col = GetColorU32(ImGuiCol_.ImGuiCol_ButtonActive);
@@ -1007,6 +1007,103 @@ public static partial class ImGui
                 GetColorU32(ImGuiCol_.ImGuiCol_CheckMark));
         }
         window.DrawList.AddText(textPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        ctx.NextItemData.Clear();
+        return pressed;
+    }
+
+    public static bool SmallButton(string label)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        var padding = new ImVec2(style.FramePadding.x * 0.5f, style.FramePadding.y * 0.5f);
+        var size = new ImVec2(labelSize.x + padding.x * 2, labelSize.y + padding.y * 2);
+        var pos = window.DC.CursorPos;
+        var bb = new ImRect(pos, new ImVec2(pos.x + size.x, pos.y + size.y));
+        if (!ItemAdd(ctx, window, bb, id))
+        {
+            ItemSize(ctx, window, size);
+            ctx.NextItemData.Clear();
+            return false;
+        }
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        bool disabled = ctx.DisabledDepth > 0;
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled);
+        uint col = GetColorU32(ImGuiCol_.ImGuiCol_Button);
+        if (hovered && ctx.IO.MouseDown[0]) col = GetColorU32(ImGuiCol_.ImGuiCol_ButtonActive);
+        else if (hovered) col = GetColorU32(ImGuiCol_.ImGuiCol_ButtonHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, col);
+        var textPos = new ImVec2(bbScreen.Min.x + padding.x, bbScreen.Min.y + padding.y);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        ctx.NextItemData.Clear();
+        return pressed;
+    }
+
+    public static bool ArrowButton(string str_id, ImGuiDir dir)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        ImGuiID id = GetID(str_id);
+        float sz = GetTextLineHeight();
+        var pos = window.DC.CursorPos;
+        var bb = new ImRect(pos, new ImVec2(pos.x + sz, pos.y + sz));
+        if (!ItemAdd(ctx, window, bb, id))
+        {
+            ItemSize(ctx, window, bb.Size);
+            ctx.NextItemData.Clear();
+            return false;
+        }
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        bool disabled = ctx.DisabledDepth > 0;
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled);
+        uint col = GetColorU32(ImGuiCol_.ImGuiCol_Button);
+        if (hovered && ctx.IO.MouseDown[0]) col = GetColorU32(ImGuiCol_.ImGuiCol_ButtonActive);
+        else if (hovered) col = GetColorU32(ImGuiCol_.ImGuiCol_ButtonHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, col);
+        string arrow = dir switch
+        {
+            ImGuiDir.ImGuiDir_Left => "<",
+            ImGuiDir.ImGuiDir_Right => ">",
+            ImGuiDir.ImGuiDir_Up => "^",
+            _ => "v"
+        };
+        var textPos = new ImVec2(bbScreen.Min.x + ctx.Style.FramePadding.x, bbScreen.Min.y + ctx.Style.FramePadding.y);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), arrow);
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        ctx.NextItemData.Clear();
+        return pressed;
+    }
+
+    public static bool InvisibleButton(string str_id, ImVec2 size)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        ImGuiID id = GetID(str_id);
+        var pos = window.DC.CursorPos;
+        var bb = new ImRect(pos, new ImVec2(pos.x + size.x, pos.y + size.y));
+        if (!ItemAdd(ctx, window, bb, id))
+        {
+            ItemSize(ctx, window, size);
+            ctx.NextItemData.Clear();
+            return false;
+        }
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        bool disabled = ctx.DisabledDepth > 0;
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled);
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, bb);
@@ -1134,6 +1231,241 @@ public static partial class ImGui
         ctx.NextItemData.Clear();
         return Math.Abs(v - oldV) > float.Epsilon;
     }
+
+    public static bool DragFloat(string label, ref float v, float v_speed = 1.0f, float v_min = float.MinValue, float v_max = float.MaxValue, string format = "%.3f")
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        float dragWidth = GetEffectiveItemWidth(ctx, 150.0f);
+        var pos = window.DC.CursorPos;
+        float frameHeight = style.FramePadding.y * 2 + style.FontSizeBase;
+        var bb = new ImRect(pos, new ImVec2(pos.x + dragWidth, pos.y + frameHeight));
+        if (!ItemAdd(ctx, window, bb, id))
+        {
+            ItemSize(ctx, window, bb.Size);
+            ctx.NextItemData.Clear();
+            return false;
+        }
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        var labelPos = new ImVec2(bb.Max.x + style.ItemSpacing.x, pos.y + style.FramePadding.y);
+
+        ref var io = ref ctx.IO;
+        bool disabled = ctx.DisabledDepth > 0;
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled, repeat: true);
+        if (pressed && !disabled)
+        {
+            ctx.ActiveId = id;
+            ctx.ActiveIdMouseButton = 0;
+            ctx.ActiveIdJustActivated = true;
+        }
+        if (ctx.ActiveId == id && io.MouseReleased[0])
+        {
+            ctx.ActiveId = 0;
+            ctx.ActiveIdMouseButton = -1;
+        }
+
+        float old = v;
+        if ((held || pressed) && !disabled)
+        {
+            float delta = io.MouseDelta.x * v_speed;
+            if (float.IsInfinity(delta) || float.IsNaN(delta))
+                delta = 0.0f;
+            v += delta;
+            if (v_min <= v_max)
+                v = Math.Clamp(v, v_min, v_max);
+        }
+
+        uint frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBg);
+        if (hovered && io.MouseDown[0]) frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgActive);
+        else if (hovered) frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, frameCol);
+
+        string valueText = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.###}", v);
+        RenderTextClipped(window, bb.Min + style.FramePadding, bb.Max - style.FramePadding, valueText, CalcTextSize(valueText, ctx, hideTextAfterDoubleHash: false));
+        window.DrawList.AddText(labelPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, new ImRect(bb.Min, new ImVec2(bb.Max.x + labelSize.x + style.ItemSpacing.x, bb.Max.y)));
+        ctx.NextItemData.Clear();
+        return Math.Abs(v - old) > float.Epsilon;
+    }
+
+    public static bool InputText(string label, ref string buf, ImGuiInputTextFlags_ flags = ImGuiInputTextFlags_.ImGuiInputTextFlags_None)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        float width = GetEffectiveItemWidth(ctx, 200.0f);
+        float height = style.FramePadding.y * 2 + style.FontSizeBase;
+        if (ctx.NextItemData.HasSize && ctx.NextItemData.ItemSize.y > 0)
+            height = ctx.NextItemData.ItemSize.y;
+        var pos = window.DC.CursorPos;
+        var frameBb = new ImRect(pos, new ImVec2(pos.x + width, pos.y + height));
+        var totalBb = new ImRect(pos, new ImVec2(frameBb.Max.x + style.ItemSpacing.x + labelSize.x, frameBb.Max.y));
+        if (!ItemAdd(ctx, window, totalBb, id))
+        {
+            ItemSize(ctx, window, totalBb.Size);
+            ctx.NextItemData.Clear();
+            return false;
+        }
+        var bbScreen = new ImRect(ToScreen(window, frameBb.Min), ToScreen(window, frameBb.Max));
+
+        ref var io = ref ctx.IO;
+        bool disabled = ctx.DisabledDepth > 0 || (flags & ImGuiInputTextFlags_.ImGuiInputTextFlags_ReadOnly) != 0;
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled);
+        if (pressed && !disabled)
+        {
+            ctx.ActiveId = id;
+            ctx.ActiveIdMouseButton = 0;
+            ctx.ActiveIdJustActivated = true;
+        }
+        if (ctx.ActiveId == id && io.MouseReleased[0])
+        {
+            ctx.ActiveId = 0;
+            ctx.ActiveIdMouseButton = -1;
+        }
+
+        if (!ctx.InputTextStates.TryGetValue(id, out var textState))
+        {
+            textState = new ImGuiInputTextState(buf ?? string.Empty);
+            textState.EditState.Cursor = textState.Buffer.Length;
+            textState.EditState.SelectStart = textState.EditState.SelectEnd = textState.EditState.Cursor;
+            ctx.InputTextStates[id] = textState;
+        }
+
+        bool changed = false;
+        if (ctx.ActiveId == id && !disabled)
+        {
+            foreach (var cp in io.InputQueueCharacters)
+            {
+                if (cp == 0)
+                    continue;
+                var ch = (char)cp;
+                textState.Buffer.Insert(textState.EditState.Cursor, ch.ToString());
+                textState.EditState.Cursor++;
+                textState.EditState.SelectStart = textState.EditState.SelectEnd = textState.EditState.Cursor;
+                changed = true;
+            }
+
+            ref var back = ref GetKeyData(ref io, ImGuiKey.ImGuiKey_Backspace);
+            bool initialBack = back.Down && back.DownDuration <= io.DeltaTime && back.DownDuration >= 0;
+            bool repeatBack = back.Down && back.DownDuration > io.KeyRepeatDelay && Math.Abs((back.DownDuration - io.KeyRepeatDelay) % io.KeyRepeatRate) < io.DeltaTime;
+            bool backPressed = initialBack || repeatBack;
+            if (backPressed && textState.EditState.Cursor > 0)
+            {
+                textState.Buffer.Delete(textState.EditState.Cursor - 1, 1);
+                textState.EditState.Cursor = Math.Max(0, textState.EditState.Cursor - 1);
+                textState.EditState.SelectStart = textState.EditState.SelectEnd = textState.EditState.Cursor;
+                changed = true;
+            }
+        }
+
+        buf = textState.Buffer.ToString();
+
+        uint frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBg);
+        if (hovered && io.MouseDown[0]) frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgActive);
+        else if (hovered) frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, frameCol);
+        var textPos = frameBb.Min + style.FramePadding;
+        RenderTextClipped(window, textPos, frameBb.Max - style.FramePadding, buf, CalcTextSize(buf, ctx, hideTextAfterDoubleHash: false));
+
+        var labelPos = new ImVec2(frameBb.Max.x + style.ItemSpacing.x, pos.y + style.FramePadding.y);
+        window.DrawList.AddText(labelPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, totalBb);
+        ctx.NextItemData.Clear();
+        return changed;
+    }
+
+    public static bool InputTextMultiline(string label, ref string buf, ImVec2 size, ImGuiInputTextFlags_ flags = ImGuiInputTextFlags_.ImGuiInputTextFlags_None)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        ctx.NextItemData.ItemSize = size;
+        ctx.NextItemData.HasSize = true;
+        return InputText(label, ref buf, flags);
+    }
+
+    public static bool BeginCombo(string label, string previewValue, ImGuiComboFlags_ flags = ImGuiComboFlags_.ImGuiComboFlags_None)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        float width = GetEffectiveItemWidth(ctx, 200.0f);
+        float height = style.FramePadding.y * 2 + style.FontSizeBase;
+        var pos = window.DC.CursorPos;
+        var frameBb = new ImRect(pos, new ImVec2(pos.x + width, pos.y + height));
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        var totalBb = new ImRect(pos, new ImVec2(frameBb.Max.x + style.ItemSpacing.x + labelSize.x, frameBb.Max.y));
+        if (!ItemAdd(ctx, window, totalBb, id))
+        {
+            ItemSize(ctx, window, totalBb.Size);
+            ctx.NextItemData.Clear();
+            return false;
+        }
+        var bbScreen = new ImRect(ToScreen(window, frameBb.Min), ToScreen(window, frameBb.Max));
+        bool disabled = ctx.DisabledDepth > 0;
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled);
+        bool open = window.StateStorage.GetBool(id, false);
+        if (pressed && !disabled)
+            open = !open;
+        window.StateStorage.SetBool(id, open);
+
+        uint frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBg);
+        if (hovered && ctx.IO.MouseDown[0]) frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgActive);
+        else if (hovered) frameCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, frameCol);
+        RenderTextClipped(window, frameBb.Min + style.FramePadding, frameBb.Max - style.FramePadding, previewValue, CalcTextSize(previewValue, ctx, hideTextAfterDoubleHash: false));
+        var arrowPos = new ImVec2(bbScreen.Max.x - style.FramePadding.x * 2, bbScreen.Min.y + style.FramePadding.y);
+        window.DrawList.AddText(arrowPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), open ? "v" : ">");
+        var labelPos = new ImVec2(frameBb.Max.x + style.ItemSpacing.x, pos.y + style.FramePadding.y);
+        window.DrawList.AddText(labelPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, totalBb);
+        ctx.NextItemData.Clear();
+        return open;
+    }
+
+    public static void EndCombo()
+    {
+        // Stub: no popup stack yet.
+    }
+
+    public static bool Combo(string label, ref int current_item, string[] items, int popup_max_height_in_items = -1)
+    {
+        if (items == null || items.Length == 0)
+            return false;
+        string preview = (current_item >= 0 && current_item < items.Length) ? items[current_item] : "";
+        bool open = BeginCombo(label, preview);
+        if (!open)
+            return false;
+        // Simplified: cycle selection on each open.
+        current_item = (current_item + 1) % items.Length;
+        EndCombo();
+        return true;
+    }
+
+    public static bool ListBox(string label, ref int current_item, string[] items, int height_in_items = -1)
+    {
+        return Combo(label, ref current_item, items, height_in_items);
+    }
+
 
     public static bool IsItemHovered()
     {
@@ -1354,7 +1686,7 @@ public static partial class ImGui
         return defaultWidth;
     }
 
-    private static bool ButtonBehavior(ImGuiContext ctx, ImRect bbScreen, ImGuiID id, out bool hovered, out bool held, out bool pressed, bool disabled)
+    private static bool ButtonBehavior(ImGuiContext ctx, ImRect bbScreen, ImGuiID id, out bool hovered, out bool held, out bool pressed, bool disabled, bool repeat = false)
     {
         ref var io = ref ctx.IO;
         hovered = !disabled && bbScreen.Contains(io.MousePos);
@@ -1375,7 +1707,27 @@ public static partial class ImGui
             ctx.ActiveIdMouseButton = -1;
         }
 
+        if (repeat && hovered && io.MouseDown[0] && !disabled)
+        {
+            float t = io.MouseDownDuration[0];
+            if (t >= 0.0f)
+            {
+                float delay = io.KeyRepeatDelay;
+                float rate = io.KeyRepeatRate;
+                if (t == 0.0f || t > delay && Math.Abs((t - delay) % rate) < io.DeltaTime)
+                    pressed = true;
+            }
+        }
+
         return pressed;
+    }
+
+    private static ref ImGuiKeyData GetKeyData(ref ImGuiIO io, ImGuiKey key)
+    {
+        int index = (int)key - (int)ImGuiKey.ImGuiKey_NamedKey_BEGIN;
+        if ((uint)index >= (uint)io.KeysData.Length)
+            throw new ArgumentOutOfRangeException(nameof(key));
+        return ref io.KeysData[index];
     }
 
     private static bool CollapsingHeaderInternal(string label, ImGuiID id, ref bool open)
