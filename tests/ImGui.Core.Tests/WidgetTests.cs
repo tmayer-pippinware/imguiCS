@@ -157,4 +157,132 @@ public class WidgetTests
         Assert.True(value);
         ImGui.End();
     }
+
+    [Fact]
+    public void RadioButton_sets_active_on_click()
+    {
+        ImGui.CreateContext();
+        bool active = false;
+        ImGui.Begin("Radio");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 2, pos.y + 2);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        var pressed = ImGui.RadioButton("Choice", ref active);
+        Assert.True(pressed);
+        Assert.True(active);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void TextColored_uses_temporary_style_color()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Text");
+        ImGui.TextColored(new ImVec4(1, 0, 0, 1), "Color");
+        ImGui.End();
+        ImGui.Render();
+        var dd = ImGui.GetDrawData();
+        Assert.Equal(2, dd.CmdLists.Count);
+        var drawList = dd.CmdLists[0];
+        Assert.Single(drawList.TextBuffer);
+        Assert.Equal("Color", drawList.TextBuffer[0].Text);
+    }
+
+    [Fact]
+    public void SliderFloat_updates_value_on_click()
+    {
+        ImGui.CreateContext();
+        float val = 0.0f;
+        ImGui.Begin("Slider");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 75, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        var changed = ImGui.SliderFloat("Volume", ref val, 0.0f, 1.0f);
+        Assert.True(changed);
+        Assert.InRange(val, 0.4f, 0.6f);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void CollapsingHeader_toggles_and_persists_state()
+    {
+        ImGui.CreateContext();
+        ImGui.SetNextWindowPos(new ImVec2(0, 0));
+        ImGui.NewFrame();
+        ImGui.Begin("Tree");
+        bool open = true;
+        var firstOpen = ImGui.CollapsingHeader("Section", ref open);
+        Assert.True(firstOpen);
+        Assert.True(open);
+        ImGui.End();
+
+        // State persists without reinitializing 'open'
+        ImGui.NewFrame();
+        ImGui.Begin("Tree");
+        var persisted = ImGui.CollapsingHeader("Section", ref open);
+        Assert.True(persisted);
+        Assert.True(open);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void TreeNode_reports_toggled_open()
+    {
+        ImGui.CreateContext();
+        ImGui.AddMousePosEvent(10, 10);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        ImGui.Begin("Tree");
+        var open = ImGui.TreeNode("Node");
+        Assert.True(open);
+        Assert.True(ImGui.IsItemToggledOpen());
+        ImGui.TreePop();
+        ImGui.End();
+    }
+
+    [Fact]
+    public void SetItemDefaultFocus_sets_nav_id()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Focus");
+        ImGui.Button("Btn");
+        ImGui.SetItemDefaultFocus();
+        Assert.True(ImGui.IsItemFocused());
+        ImGui.End();
+    }
+
+    [Fact]
+    public void BulletText_and_TextWrapped_render_lines()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Wrap");
+        ImGui.BulletText("Bullet");
+        ImGui.SetNextWindowSize(new ImVec2(50, 100));
+        ImGui.TextWrapped("This is a wrapped line of text");
+        ImGui.End();
+        ImGui.Render();
+        var dd = ImGui.GetDrawData();
+        Assert.Equal(2, dd.CmdLists.Count);
+        Assert.True(dd.CmdLists[0].TextBuffer.Count >= 2);
+    }
+
+    [Fact]
+    public void Indent_and_unindent_move_cursor()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Indent");
+        var start = ImGui.GetCursorPos();
+        ImGui.Indent();
+        var afterIndent = ImGui.GetCursorPos();
+        ImGui.Unindent();
+        var afterUnindent = ImGui.GetCursorPos();
+        Assert.True(afterIndent.x > start.x);
+        Assert.Equal(start.x, afterUnindent.x);
+        ImGui.End();
+    }
 }

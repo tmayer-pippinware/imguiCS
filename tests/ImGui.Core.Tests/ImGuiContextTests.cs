@@ -50,4 +50,20 @@ public class ImGuiContextTests
         Assert.True(ImGui.GetTime() > startTime);
         Assert.True(ImGui.GetFrameCount() >= startFrame + 2);
     }
+
+    [Fact]
+    public void PushItemWidth_affects_slider_then_restores()
+    {
+        ImGui.CreateContext();
+        float v1 = 0, v2 = 0;
+        ImGui.Begin("Widths");
+        ImGui.PushItemWidth(200);
+        ImGui.SliderFloat("A", ref v1, 0, 1);
+        var sizeA = ImGui.GetItemRectSize();
+        ImGui.PopItemWidth();
+        ImGui.SliderFloat("B", ref v2, 0, 1);
+        var sizeB = ImGui.GetItemRectSize();
+        Assert.True(sizeA.x > sizeB.x);
+        ImGui.End();
+    }
 }

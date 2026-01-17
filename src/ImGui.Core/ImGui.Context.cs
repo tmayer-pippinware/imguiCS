@@ -23,6 +23,17 @@ public sealed class ImGuiContext
     public int ActiveIdMouseButton;
     public bool ActiveIdJustActivated;
     public double Time;
+    internal readonly Stack<(int idx, ImVec4 previous)> ColorStack = new();
+    internal ImGuiNextItemData NextItemData = new();
+    internal readonly Stack<float> ItemWidthStack = new();
+    internal readonly Stack<float> StyleAlphaStack = new();
+    internal int DisabledDepth;
+    internal readonly Stack<ImGuiTable> TableStack = new();
+    internal ImGuiTable? CurrentTable;
+    public ImGuiID NavId;
+    public bool NavInitRequest;
+    public ImGuiID NavInitResultId;
+    public bool NavMoveRequest;
     internal ImGuiNextWindowData NextWindowData;
 
     public ImGuiContext()
