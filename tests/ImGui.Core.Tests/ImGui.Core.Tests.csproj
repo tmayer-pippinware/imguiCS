@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ImGui.Core\ImGui.Core.csproj" />
+    <ProjectReference Include="..\..\src\ImGui.Backends.Sdl\ImGui.Backends.Sdl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
