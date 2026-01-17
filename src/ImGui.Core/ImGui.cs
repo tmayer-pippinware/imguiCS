@@ -49,6 +49,7 @@ public static partial class ImGui
         ctx.FrameCount++;
         if (ctx.IO.DeltaTime <= 0f)
             ctx.IO.DeltaTime = 1f / 60f;
+        ctx.ProcessInputEvents();
     }
 
     public static void EndFrame()

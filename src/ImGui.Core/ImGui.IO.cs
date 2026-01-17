@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 
 namespace ImGui;
 
@@ -80,6 +81,30 @@ public struct ImGuiIO
     public ImGuiKeyData[] KeysData;
     public bool AppAcceptingEvents;
     public ushort InputQueueSurrogate;
+    public bool[] MouseDown;
+    public float MouseWheel;
+    public float MouseWheelH;
+    public bool KeyCtrl;
+    public bool KeyShift;
+    public bool KeyAlt;
+    public bool KeySuper;
+    public int KeyMods;
+    public bool WantCaptureMouse;
+    public bool WantCaptureKeyboard;
+    public bool WantTextInput;
+    public bool WantSetMousePos;
+    public bool WantSaveIniSettings;
+    public bool NavActive;
+    public bool NavVisible;
+    public float Framerate;
+    public int MetricsRenderVertices;
+    public int MetricsRenderIndices;
+    public int MetricsRenderWindows;
+    public int MetricsActiveWindows;
+    public ImVec2 MouseDelta;
+    public bool AppFocusLost;
+    public bool WantCaptureMouseUnlessPopupClose;
+    public List<uint> InputQueueCharacters;
 
     public ImGuiIO()
     {
@@ -137,6 +162,7 @@ public struct ImGuiIO
         int mouseCount = (int)ImGuiMouseButton_.ImGuiMouseButton_COUNT;
         MouseDownDuration = CreateAndFill(mouseCount, -1.0f);
         MouseDownDurationPrev = CreateAndFill(mouseCount, -1.0f);
+        MouseDown = new bool[mouseCount];
 
         int keyCount = (int)ImGuiKey.ImGuiKey_NamedKey_COUNT;
         KeysData = new ImGuiKeyData[keyCount];
@@ -147,6 +173,8 @@ public struct ImGuiIO
         }
 
         AppAcceptingEvents = true;
+        InputQueueCharacters = new List<uint>(8);
+        MouseDelta = ImVec2.Zero;
     }
 
     public void AddInputCharacter(uint c)
@@ -192,6 +220,179 @@ public struct ImGuiIO
         }
 
         AddInputCharacter(cp);
+    }
+
+    public void AddKeyEvent(ImGuiKey key, bool down)
+    {
+        var ctx = Context;
+        if (ctx == null || !AppAcceptingEvents)
+            return;
+        ImGuiInputEvent evt = new()
+        {
+            Type = ImGuiInputEventType.Key,
+            Source = ImGuiInputSource.Keyboard,
+            EventId = ctx.InputEventsNextEventId++,
+            Key = new ImGuiInputEventKey { Key = key, Down = down, AnalogValue = down ? 1.0f : 0.0f }
+        };
+        ctx.EnqueueInputEvent(evt);
+    }
+
+    public void AddMousePosEvent(float x, float y)
+    {
+        var ctx = Context;
+        if (ctx == null || !AppAcceptingEvents)
+            return;
+        ImGuiInputEvent evt = new()
+        {
+            Type = ImGuiInputEventType.MousePos,
+            Source = ImGuiInputSource.Mouse,
+            EventId = ctx.InputEventsNextEventId++,
+            MousePos = new ImGuiInputEventMousePos { Pos = new ImVec2(x, y) }
+        };
+        ctx.EnqueueInputEvent(evt);
+    }
+
+    public void AddMouseButtonEvent(int button, bool down)
+    {
+        var ctx = Context;
+        if (ctx == null || !AppAcceptingEvents)
+            return;
+        ImGuiInputEvent evt = new()
+        {
+            Type = ImGuiInputEventType.MouseButton,
+            Source = ImGuiInputSource.Mouse,
+            EventId = ctx.InputEventsNextEventId++,
+            MouseButton = new ImGuiInputEventMouseButton { Button = button, Down = down }
+        };
+        ctx.EnqueueInputEvent(evt);
+    }
+
+    public void AddMouseWheelEvent(float wheelX, float wheelY)
+    {
+        var ctx = Context;
+        if (ctx == null || !AppAcceptingEvents)
+            return;
+        ImGuiInputEvent evt = new()
+        {
+            Type = ImGuiInputEventType.MouseWheel,
+            Source = ImGuiInputSource.Mouse,
+            EventId = ctx.InputEventsNextEventId++,
+            MouseWheel = new ImGuiInputEventMouseWheel { WheelX = wheelX, WheelY = wheelY }
+        };
+        ctx.EnqueueInputEvent(evt);
+    }
+
+    public void AddMouseSourceEvent(ImGuiMouseSource source)
+    {
+        var ctx = Context;
+        if (ctx == null || !AppAcceptingEvents)
+            return;
+        ImGuiInputEvent evt = new()
+        {
+            Type = ImGuiInputEventType.MouseSource,
+            Source = ImGuiInputSource.Mouse,
+            EventId = ctx.InputEventsNextEventId++,
+            MouseSource = source
+        };
+        ctx.EnqueueInputEvent(evt);
+    }
+
+    public void AddFocusEvent(bool focused)
+    {
+        var ctx = Context;
+        if (ctx == null)
+            return;
+        ImGuiInputEvent evt = new()
+        {
+            Type = ImGuiInputEventType.Focus,
+            Source = ImGuiInputSource.None,
+            EventId = ctx.InputEventsNextEventId++,
+            Focus = new ImGuiInputEventFocus { Focused = focused }
+        };
+        ctx.EnqueueInputEvent(evt);
+    }
+
+    public void AddInputCharactersUTF8(ReadOnlySpan<byte> utf8)
+    {
+        if (!AppAcceptingEvents)
+            return;
+        int i = 0;
+        while (i < utf8.Length)
+        {
+            uint codepoint;
+            int consumed = Utf8Decode(utf8.Slice(i), out codepoint);
+            if (consumed <= 0)
+                break;
+            AddInputCharacter(codepoint);
+            i += consumed;
+        }
+    }
+
+    public void ClearEventsQueue()
+    {
+        Context?.InputEventsQueue.Clear();
+    }
+
+    public void ClearInputKeys()
+    {
+        for (int i = 0; i < KeysData.Length; i++)
+        {
+            KeysData[i].Down = false;
+            KeysData[i].DownDuration = -1.0f;
+            KeysData[i].DownDurationPrev = -1.0f;
+        }
+        KeyCtrl = KeyShift = KeyAlt = KeySuper = false;
+        KeyMods = 0;
+        InputQueueCharacters.Clear();
+        WantTextInput = false;
+    }
+
+    public void ClearInputMouse()
+    {
+        for (int i = 0; i < MouseDown.Length; i++)
+        {
+            MouseDown[i] = false;
+            MouseDownDuration[i] = -1.0f;
+            MouseDownDurationPrev[i] = -1.0f;
+        }
+        MouseWheel = 0;
+        MouseWheelH = 0;
+        MousePos = new ImVec2(-float.MaxValue, -float.MaxValue);
+        MousePosPrev = new ImVec2(-float.MaxValue, -float.MaxValue);
+    }
+
+    public void SetAppAcceptingEvents(bool acceptingEvents)
+    {
+        AppAcceptingEvents = acceptingEvents;
+    }
+
+    private static int Utf8Decode(ReadOnlySpan<byte> data, out uint codepoint)
+    {
+        codepoint = 0;
+        if (data.IsEmpty)
+            return 0;
+        byte b0 = data[0];
+        if (b0 < 0x80)
+        {
+            codepoint = b0;
+            return 1;
+        }
+        if ((b0 & 0xE0) == 0xC0 && data.Length >= 2)
+        {
+            codepoint = (uint)(((b0 & 0x1F) << 6) | (data[1] & 0x3F));
+            return 2;
+        }
+        if ((b0 & 0xF0) == 0xE0 && data.Length >= 3)
+        {
+            codepoint = (uint)(((b0 & 0x0F) << 12) | ((data[1] & 0x3F) << 6) | (data[2] & 0x3F));
+            return 3;
+        }
+        if ((b0 & 0xF8) == 0xF0 && data.Length >= 4)
+        {
+            codepoint = (uint)(((b0 & 0x07) << 18) | ((data[1] & 0x3F) << 12) | ((data[2] & 0x3F) << 6) | (data[3] & 0x3F));
+            return 4;
+        }
+        return 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

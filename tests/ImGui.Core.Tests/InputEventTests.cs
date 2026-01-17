@@ -10,16 +10,17 @@ public class InputEventTests
     {
         ImGui.CreateContext();
         ref var io = ref ImGui.GetIO();
+        var ctx = ImGui.GetCurrentContext()!;
+        ctx.InputEventsQueue.Clear();
+        io.InputQueueCharacters.Clear();
 
         ImGui.AddInputCharacter('A');
         ImGui.AddInputCharacter('B');
+        ImGui.NewFrame();
 
-        var ctx = ImGui.GetCurrentContext()!;
-        Assert.Equal(2, ctx.InputEventsQueue.Count);
-        Assert.Equal((uint)'A', ctx.InputEventsQueue[0].Text.Char);
-        Assert.Equal(1u, ctx.InputEventsQueue[0].EventId);
-        Assert.Equal((uint)'B', ctx.InputEventsQueue[1].Text.Char);
-        Assert.Equal(2u, ctx.InputEventsQueue[1].EventId);
+        Assert.Equal(2, io.InputQueueCharacters.Count);
+        Assert.Equal((uint)'A', io.InputQueueCharacters[0]);
+        Assert.Equal((uint)'B', io.InputQueueCharacters[1]);
     }
 
     [Fact]
@@ -35,5 +36,21 @@ public class InputEventTests
         var ctx = ImGui.GetCurrentContext()!;
         Assert.Single(ctx.InputEventsQueue);
         Assert.Equal(0x1F60Au, ctx.InputEventsQueue[0].Text.Char);
+    }
+
+    [Fact]
+    public void AddKeyEvent_updates_mods_after_new_frame()
+    {
+        ImGui.CreateContext();
+        ref var io = ref ImGui.GetIO();
+        io.AddKeyEvent(ImGuiKey.ImGuiKey_LeftCtrl, true);
+        ImGui.NewFrame();
+
+        Assert.True(io.KeyCtrl);
+        Assert.True((io.KeyMods & (int)ImGuiKey.ImGuiMod_Ctrl) != 0);
+
+        io.AddKeyEvent(ImGuiKey.ImGuiKey_LeftCtrl, false);
+        ImGui.NewFrame();
+        Assert.False(io.KeyCtrl);
     }
 }
