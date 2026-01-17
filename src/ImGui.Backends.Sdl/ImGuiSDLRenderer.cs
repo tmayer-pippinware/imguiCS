@@ -16,6 +16,7 @@ public sealed class ImGuiSDLRenderer
     private bool _nativeEnabled;
     private ImGuiSDLRendererOptions _options = new();
     private IntPtr _fontTexture;
+    private readonly Dictionary<IntPtr, TextureInfo> _textures = new();
 
     public bool Init(IntPtr window, ImGuiSDLRendererOptions? options = null)
     {
@@ -35,16 +36,10 @@ public sealed class ImGuiSDLRenderer
                     : SDL.SDL_CreateRenderer(_window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
                 _ownsRenderer = _renderer != IntPtr.Zero && _options.ExistingRenderer == IntPtr.Zero;
 
-                // Create a 1x1 white texture as a stand-in for the font atlas until a real atlas upload exists.
+                // Upload font atlas (or fallback) as an SDL texture.
                 if (_renderer != IntPtr.Zero)
                 {
-                    _fontTexture = SDL.SDL_CreateTexture(_renderer, SDL.SDL_PIXELFORMAT_ABGR8888, (int)SDL.SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC, 1, 1);
-                    uint white = 0xFFFFFFFF;
-                    SDL.SDL_Rect rect = new() { x = 0, y = 0, w = 1, h = 1 };
-                    unsafe
-                    {
-                        SDL.SDL_UpdateTexture(_fontTexture, ref rect, new IntPtr(&white), sizeof(uint));
-                    }
+                    UploadFontTexture(ref io);
                     io.Fonts ??= new ImFontAtlas();
                     io.Fonts.SetTexID((nint)_fontTexture);
                 }
@@ -107,6 +102,7 @@ public sealed class ImGuiSDLRenderer
                 int baseIndex = idxOffset + (int)cmd.IdxOffset;
                 int baseVertex = (int)cmd.VtxOffset;
 
+                IntPtr texture = cmd.TextureId != IntPtr.Zero ? (IntPtr)cmd.TextureId : _fontTexture;
                 for (int i = baseIndex; i + 2 < end && i + 2 < idx.Count; i += 3)
                 {
                     int i0 = baseVertex + idx[i];
@@ -120,7 +116,7 @@ public sealed class ImGuiSDLRenderer
                     var v2 = OffsetVertex(verts[i2], drawData.DisplayPos);
 
                     if (_options.FillTriangles)
-                        DrawFilledTriangle(v0, v1, v2);
+                        DrawTexturedTriangle(v0, v1, v2, texture);
 
                     if (_options.DrawWireframe)
                     {
@@ -166,22 +162,37 @@ public sealed class ImGuiSDLRenderer
 
     private void DrawTextFallback(in ImDrawTextCommand cmd, ImVec2 displayPos)
     {
-        // Approximate text as a filled rectangle sized by character count.
-        int width = Math.Max(1, (int)(cmd.Text.Length * 7));
-        int height = 14;
-        byte r = ColorChannel(cmd.Color, 0);
-        byte g = ColorChannel(cmd.Color, 8);
-        byte b = ColorChannel(cmd.Color, 16);
-        byte a = ColorChannel(cmd.Color, 24);
-        SDL.SDL_SetRenderDrawColor(_renderer, r, g, b, a);
-        SDL.SDL_Rect rect = new()
+        const int cell = 8;
+        int cursorX = (int)(cmd.Pos.x - displayPos.x);
+        int cursorY = (int)(cmd.Pos.y - displayPos.y);
+        IntPtr texture = _fontTexture;
+
+        for (int i = 0; i < cmd.Text.Length; i++)
         {
-            x = (int)(cmd.Pos.x - displayPos.x),
-            y = (int)(cmd.Pos.y - displayPos.y),
-            w = width,
-            h = height
-        };
-        SDL.SDL_RenderFillRect(_renderer, ref rect);
+            char c = cmd.Text[i];
+            if (c < 32 || c > 126)
+            {
+                cursorX += cell;
+                continue;
+            }
+            int glyphIndex = c - 32;
+            const int cols = 16;
+            int gx = glyphIndex % cols;
+            int gy = glyphIndex / cols;
+            float u0 = (gx * cell) / (float)_textures[texture].Width;
+            float vv0 = (gy * cell) / (float)_textures[texture].Height;
+            float u1 = ((gx + 1) * cell) / (float)_textures[texture].Width;
+            float vv1 = ((gy + 1) * cell) / (float)_textures[texture].Height;
+
+            ImDrawVert tv0 = new(new ImVec2(cursorX, cursorY), new ImVec2(u0, vv0), cmd.Color);
+            ImDrawVert tv1 = new(new ImVec2(cursorX + cell, cursorY), new ImVec2(u1, vv0), cmd.Color);
+            ImDrawVert tv2 = new(new ImVec2(cursorX + cell, cursorY + cell), new ImVec2(u1, vv1), cmd.Color);
+            ImDrawVert tv3 = new(new ImVec2(cursorX, cursorY + cell), new ImVec2(u0, vv1), cmd.Color);
+
+            DrawTexturedTriangle(tv0, tv1, tv2, texture);
+            DrawTexturedTriangle(tv0, tv2, tv3, texture);
+            cursorX += cell;
+        }
     }
 
     private void DrawFilledTriangle(in ImDrawVert v0, in ImDrawVert v1, in ImDrawVert v2)
@@ -214,6 +225,83 @@ public sealed class ImGuiSDLRenderer
         }
     }
 
+    private void DrawTexturedTriangle(in ImDrawVert v0, in ImDrawVert v1, in ImDrawVert v2, IntPtr textureId)
+    {
+        if (!_textures.TryGetValue(textureId, out var tex))
+        {
+            DrawFilledTriangle(v0, v1, v2);
+            return;
+        }
+
+        float minX = MathF.Min(v0.pos.x, MathF.Min(v1.pos.x, v2.pos.x));
+        float minY = MathF.Min(v0.pos.y, MathF.Min(v1.pos.y, v2.pos.y));
+        float maxX = MathF.Max(v0.pos.x, MathF.Max(v1.pos.x, v2.pos.x));
+        float maxY = MathF.Max(v0.pos.y, MathF.Max(v1.pos.y, v2.pos.y));
+
+        int minXi = (int)MathF.Floor(minX);
+        int minYi = (int)MathF.Floor(minY);
+        int maxXi = (int)MathF.Ceiling(maxX);
+        int maxYi = (int)MathF.Ceiling(maxY);
+
+        for (int y = minYi; y <= maxYi; y++)
+        {
+            for (int x = minXi; x <= maxXi; x++)
+            {
+                float px = x + 0.5f;
+                float py = y + 0.5f;
+                float w0, w1, w2;
+                Barycentric(px, py, v0.pos, v1.pos, v2.pos, out w0, out w1, out w2);
+                if (w0 < 0 || w1 < 0 || w2 < 0)
+                    continue;
+
+                float u = w0 * v0.uv.x + w1 * v1.uv.x + w2 * v2.uv.x;
+                float v = w0 * v0.uv.y + w1 * v1.uv.y + w2 * v2.uv.y;
+                int tx = Clamp((int)(u * tex.Width), 0, tex.Width - 1);
+                int ty = Clamp((int)(v * tex.Height), 0, tex.Height - 1);
+                var sample = tex.GetPixel(tx, ty);
+
+                byte r = (byte)(sample.r * (w0 * ColorChannel(v0.col, 0) + w1 * ColorChannel(v1.col, 0) + w2 * ColorChannel(v2.col, 0)) / 255f);
+                byte g = (byte)(sample.g * (w0 * ColorChannel(v0.col, 8) + w1 * ColorChannel(v1.col, 8) + w2 * ColorChannel(v2.col, 8)) / 255f);
+                byte b = (byte)(sample.b * (w0 * ColorChannel(v0.col, 16) + w1 * ColorChannel(v1.col, 16) + w2 * ColorChannel(v2.col, 16)) / 255f);
+                byte a = (byte)(sample.a * (w0 * ColorChannel(v0.col, 24) + w1 * ColorChannel(v1.col, 24) + w2 * ColorChannel(v2.col, 24)) / 255f);
+
+                SDL.SDL_SetRenderDrawColor(_renderer, r, g, b, a);
+                SDL.SDL_RenderDrawPoint(_renderer, x, y);
+            }
+        }
+    }
+
+    private void UploadFontTexture(ref ImGuiIO io)
+    {
+        int width = 1;
+        int height = 1;
+        byte[] pixels = new byte[] { 255, 255, 255, 255 };
+
+        if (io.Fonts != null && io.Fonts.TexPixelsRGBA32 != null && io.Fonts.TexPixelsRGBA32.Length >= 4)
+        {
+            pixels = io.Fonts.TexPixelsRGBA32;
+            width = io.Fonts.TexWidth > 0 ? io.Fonts.TexWidth : 1;
+            height = io.Fonts.TexHeight > 0 ? io.Fonts.TexHeight : 1;
+        }
+
+        _fontTexture = SDL.SDL_CreateTexture(_renderer, SDL.SDL_PIXELFORMAT_ABGR8888, (int)SDL.SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC, width, height);
+        SDL.SDL_Rect rect = new() { x = 0, y = 0, w = width, h = height };
+        unsafe
+        {
+            fixed (byte* ptr = pixels)
+            {
+                SDL.SDL_UpdateTexture(_fontTexture, ref rect, new IntPtr(ptr), width * 4);
+            }
+        }
+
+        _textures[_fontTexture] = new TextureInfo(width, height, pixels);
+        if (io.Fonts != null)
+        {
+            io.Fonts.TexWidth = width;
+            io.Fonts.TexHeight = height;
+        }
+    }
+
     private static bool PointInTriangle(float px, float py, ImVec2 a, ImVec2 b, ImVec2 c)
     {
         float d1 = Cross(px, py, a, b);
@@ -229,6 +317,59 @@ public sealed class ImGuiSDLRenderer
         return (px - v2.x) * (v1.y - v2.y) - (v1.x - v2.x) * (py - v2.y);
     }
 
+    private static void Barycentric(float px, float py, ImVec2 a, ImVec2 b, ImVec2 c, out float w0, out float w1, out float w2)
+    {
+        float denom = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+        if (MathF.Abs(denom) < 1e-6f)
+        {
+            w0 = w1 = w2 = -1f;
+            return;
+        }
+        w0 = ((b.y - c.y) * (px - c.x) + (c.x - b.x) * (py - c.y)) / denom;
+        w1 = ((c.y - a.y) * (px - c.x) + (a.x - c.x) * (py - c.y)) / denom;
+        w2 = 1f - w0 - w1;
+    }
+
+    private static int Clamp(int v, int min, int max)
+    {
+        if (v < min) return min;
+        if (v > max) return max;
+        return v;
+    }
+
+    private readonly struct TextureInfo
+    {
+        public readonly int Width;
+        public readonly int Height;
+        public readonly byte[] Data; // RGBA
+
+        public TextureInfo(int width, int height, byte[] data)
+        {
+            Width = width;
+            Height = height;
+            Data = data;
+        }
+
+        public (byte r, byte g, byte b, byte a) GetPixel(int x, int y)
+        {
+            int idx = (y * Width + x) * 4;
+            return (Data[idx + 0], Data[idx + 1], Data[idx + 2], Data[idx + 3]);
+        }
+
+        public static TextureInfo CreateSolid(int w, int h, byte r, byte g, byte b, byte a)
+        {
+            var data = new byte[w * h * 4];
+            for (int i = 0; i < w * h; i++)
+            {
+                int idx = i * 4;
+                data[idx + 0] = r;
+                data[idx + 1] = g;
+                data[idx + 2] = b;
+                data[idx + 3] = a;
+            }
+            return new TextureInfo(w, h, data);
+        }
+    }
 }
 
 public sealed class ImGuiSDLRendererOptions

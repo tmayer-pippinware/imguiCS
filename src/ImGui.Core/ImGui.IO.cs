@@ -2,6 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using StbTrueTypeSharp;
 
 namespace ImGui;
 
@@ -428,8 +429,10 @@ public struct ImGuiKeyData
 public sealed class ImFontAtlas
 {
     public ImTextureID TexID { get; private set; }
-    public int TexWidth { get; internal set; }
-    public int TexHeight { get; internal set; }
+    public int TexWidth { get; set; }
+    public int TexHeight { get; set; }
+    public byte[]? TexPixelsRGBA32 { get; set; }
+    public stbtt_bakedchar[]? BakedChars { get; set; }
 
     public void SetTexID(ImTextureID texId)
     {

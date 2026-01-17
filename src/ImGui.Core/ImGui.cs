@@ -15,7 +15,46 @@ public static partial class ImGui
         var ctx = new ImGuiContext();
         SetCurrentContext(ctx);
         ctx.IO.Fonts = sharedFontAtlas ?? new ImFontAtlas();
+        if (ctx.IO.Fonts.TexPixelsRGBA32 == null)
+            BuildDefaultFontAtlas(ctx.IO);
         return ctx;
+    }
+
+    private static void BuildDefaultFontAtlas(ImGuiIO io)
+    {
+        // Minimal baked atlas: a single white pixel, to be replaced by stb bake.
+        if (io.Fonts == null)
+            return;
+        const int cellSize = 8;
+        const int glyphs = 95; // printable ASCII 32..126
+        const int cols = 16;
+        int rows = (glyphs + cols - 1) / cols;
+        int width = cols * cellSize;
+        int height = rows * cellSize;
+        byte[] pixels = new byte[width * height * 4];
+
+        for (int i = 0; i < glyphs; i++)
+        {
+            int gx = i % cols;
+            int gy = i / cols;
+            for (int y = 1; y < cellSize - 1; y++)
+            {
+                for (int x = 1; x < cellSize - 1; x++)
+                {
+                    int px = gx * cellSize + x;
+                    int py = gy * cellSize + y;
+                    int idx = (py * width + px) * 4;
+                    pixels[idx + 0] = 255;
+                    pixels[idx + 1] = 255;
+                    pixels[idx + 2] = 255;
+                    pixels[idx + 3] = 255;
+                }
+            }
+        }
+
+        io.Fonts.TexWidth = width;
+        io.Fonts.TexHeight = height;
+        io.Fonts.TexPixelsRGBA32 = pixels;
     }
 
     public static void DestroyContext(ImGuiContext? context = null)
