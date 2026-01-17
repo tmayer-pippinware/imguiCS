@@ -8,13 +8,13 @@ public static partial class ImGui
     private static ImGuiContext? _currentContext;
     private static readonly ImDrawData _drawData = new();
     private static bool _lastItemToggledOpen;
+    private static string _fallbackClipboard = string.Empty;
 
     public static ImGuiContext CreateContext(ImFontAtlas? sharedFontAtlas = null)
     {
         var ctx = new ImGuiContext();
         SetCurrentContext(ctx);
-        if (sharedFontAtlas != null)
-            ctx.IO.Fonts = sharedFontAtlas;
+        ctx.IO.Fonts = sharedFontAtlas ?? new ImFontAtlas();
         return ctx;
     }
 
@@ -113,6 +113,25 @@ public static partial class ImGui
     {
         var bb = new ImRect(window.DC.CursorPos, new ImVec2(window.DC.CursorPos.x + size.x, window.DC.CursorPos.y + size.y));
         AdvanceCursorForItem(ctx, window, bb);
+    }
+
+    public static string GetClipboardText()
+    {
+        ref var io = ref GetIO();
+        if (io.GetClipboardTextFn != null)
+            return io.GetClipboardTextFn() ?? string.Empty;
+        return _fallbackClipboard;
+    }
+
+    public static void SetClipboardText(string text)
+    {
+        ref var io = ref GetIO();
+        if (io.SetClipboardTextFn != null)
+        {
+            io.SetClipboardTextFn(text);
+            return;
+        }
+        _fallbackClipboard = text ?? string.Empty;
     }
 
     public static void NewFrame()

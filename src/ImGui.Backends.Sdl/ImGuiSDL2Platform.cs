@@ -32,6 +32,12 @@ public sealed class ImGuiSDL2Platform
         if (_options.AllowSetMousePosition)
             io.BackendFlags |= ImGuiBackendFlags_.ImGuiBackendFlags_HasSetMousePos;
 
+        if (_nativeAvailable)
+        {
+            io.GetClipboardTextFn = GetClipboardTextSdl;
+            io.SetClipboardTextFn = SetClipboardTextSdl;
+        }
+
         if (_nativeAvailable && _window != IntPtr.Zero)
             UpdateDisplaySizeFromNative();
         else if (_options.InitialDisplaySize.HasValue)
@@ -142,6 +148,16 @@ public sealed class ImGuiSDL2Platform
         {
             io.DisplayFramebufferScale = new ImVec2(drawableW / io.DisplaySize.x, drawableH / io.DisplaySize.y);
         }
+    }
+
+    private static string GetClipboardTextSdl()
+    {
+        return SDL.SDL_GetClipboardText() ?? string.Empty;
+    }
+
+    private static void SetClipboardTextSdl(string text)
+    {
+        SDL.SDL_SetClipboardText(text ?? string.Empty);
     }
 
     private float CalculateDeltaTime()

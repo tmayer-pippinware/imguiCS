@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using ImGui;
 using SDL2;
 
@@ -14,6 +15,7 @@ public sealed class ImGuiSDLRenderer
     private bool _ownsRenderer;
     private bool _nativeEnabled;
     private ImGuiSDLRendererOptions _options = new();
+    private IntPtr _fontTexture;
 
     public bool Init(IntPtr window, ImGuiSDLRendererOptions? options = null)
     {
@@ -32,6 +34,20 @@ public sealed class ImGuiSDLRenderer
                     ? _options.ExistingRenderer
                     : SDL.SDL_CreateRenderer(_window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
                 _ownsRenderer = _renderer != IntPtr.Zero && _options.ExistingRenderer == IntPtr.Zero;
+
+                // Create a 1x1 white texture as a stand-in for the font atlas until a real atlas upload exists.
+                if (_renderer != IntPtr.Zero)
+                {
+                    _fontTexture = SDL.SDL_CreateTexture(_renderer, SDL.SDL_PIXELFORMAT_ABGR8888, (int)SDL.SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC, 1, 1);
+                    uint white = 0xFFFFFFFF;
+                    SDL.SDL_Rect rect = new() { x = 0, y = 0, w = 1, h = 1 };
+                    unsafe
+                    {
+                        SDL.SDL_UpdateTexture(_fontTexture, ref rect, new IntPtr(&white), sizeof(uint));
+                    }
+                    io.Fonts ??= new ImFontAtlas();
+                    io.Fonts.SetTexID((nint)_fontTexture);
+                }
             }
             catch (DllNotFoundException)
             {
@@ -90,6 +106,7 @@ public sealed class ImGuiSDLRenderer
                 int end = idxOffset + cmd.ElemCount;
                 int baseIndex = idxOffset + (int)cmd.IdxOffset;
                 int baseVertex = (int)cmd.VtxOffset;
+
                 for (int i = baseIndex; i + 2 < end && i + 2 < idx.Count; i += 3)
                 {
                     int i0 = baseVertex + idx[i];
@@ -133,7 +150,10 @@ public sealed class ImGuiSDLRenderer
     {
         if (_ownsRenderer && _renderer != IntPtr.Zero)
             SDL.SDL_DestroyRenderer(_renderer);
+        if (_fontTexture != IntPtr.Zero && _ownsRenderer)
+            SDL.SDL_DestroyTexture(_fontTexture);
         _renderer = IntPtr.Zero;
+        _fontTexture = IntPtr.Zero;
         _nativeEnabled = false;
     }
 
@@ -208,6 +228,7 @@ public sealed class ImGuiSDLRenderer
     {
         return (px - v2.x) * (v1.y - v2.y) - (v1.x - v2.x) * (py - v2.y);
     }
+
 }
 
 public sealed class ImGuiSDLRendererOptions

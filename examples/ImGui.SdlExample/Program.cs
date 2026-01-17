@@ -4,7 +4,7 @@ using SDL2;
 using ImGuiApi = ImGui.ImGui;
 
 // SDL2-based example that opens a native window, processes SDL events, and feeds them into imguiCS.
-// Rendering uses SDL's 2D renderer to visualize draw geometry (colors only; text stays stubbed).
+// Rendering uses SDL's 2D renderer to visualize draw geometry. Font atlas is currently a 1x1 texture stub.
 
 ImGuiApi.CreateContext();
 SDL.SDL_Init(SDL.SDL_INIT_VIDEO | SDL.SDL_INIT_TIMER);

@@ -425,5 +425,16 @@ public struct ImGuiKeyData
 }
 
 // Placeholders for future font bindings.
-public sealed class ImFontAtlas { }
+public sealed class ImFontAtlas
+{
+    public ImTextureID TexID { get; private set; }
+    public int TexWidth { get; internal set; }
+    public int TexHeight { get; internal set; }
+
+    public void SetTexID(ImTextureID texId)
+    {
+        TexID = texId;
+    }
+}
+
 public sealed class ImFont { }
