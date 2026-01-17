@@ -1974,6 +1974,35 @@ public static partial class ImGui
         }
     }
 
+    public static void PushStyleVar(ImGuiStyleVar_ idx, float val)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        ctx.StyleVarStack.Push((idx, GetStyleVarFloat(idx), ImVec2.Zero, false));
+        SetStyleVar(idx, val);
+    }
+
+    public static void PushStyleVar(ImGuiStyleVar_ idx, ImVec2 val)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        ctx.StyleVarStack.Push((idx, 0f, GetStyleVarVec2(idx), true));
+        SetStyleVar(idx, val);
+    }
+
+    public static void PopStyleVar(int count = 1)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        for (int i = 0; i < count; i++)
+        {
+            if (ctx.StyleVarStack.Count == 0)
+                return;
+            var entry = ctx.StyleVarStack.Pop();
+            if (entry.isVec2)
+                SetStyleVar(entry.idx, entry.v);
+            else
+                SetStyleVar(entry.idx, entry.f);
+        }
+    }
+
     public static float GetTextLineHeight()
     {
         ref var style = ref GetStyle();
@@ -1984,6 +2013,72 @@ public static partial class ImGui
     {
         ref var style = ref GetStyle();
         return style.FontSizeBase + style.FramePadding.y * 2.0f + style.ItemSpacing.y;
+    }
+
+    private static float GetStyleVarFloat(ImGuiStyleVar_ idx)
+    {
+        ref var style = ref GetStyle();
+        return idx switch
+        {
+            ImGuiStyleVar_.ImGuiStyleVar_Alpha => style.Alpha,
+            ImGuiStyleVar_.ImGuiStyleVar_DisabledAlpha => style.DisabledAlpha,
+            ImGuiStyleVar_.ImGuiStyleVar_IndentSpacing => style.IndentSpacing,
+            ImGuiStyleVar_.ImGuiStyleVar_ScrollbarSize => style.ScrollbarSize,
+            ImGuiStyleVar_.ImGuiStyleVar_ScrollbarRounding => style.ScrollbarRounding,
+            ImGuiStyleVar_.ImGuiStyleVar_GrabMinSize => style.GrabMinSize,
+            ImGuiStyleVar_.ImGuiStyleVar_GrabRounding => style.GrabRounding,
+            _ => 0f
+        };
+    }
+
+    private static ImVec2 GetStyleVarVec2(ImGuiStyleVar_ idx)
+    {
+        ref var style = ref GetStyle();
+        return idx switch
+        {
+            ImGuiStyleVar_.ImGuiStyleVar_WindowPadding => style.WindowPadding,
+            ImGuiStyleVar_.ImGuiStyleVar_WindowMinSize => style.WindowMinSize,
+            ImGuiStyleVar_.ImGuiStyleVar_WindowTitleAlign => style.WindowTitleAlign,
+            ImGuiStyleVar_.ImGuiStyleVar_FramePadding => style.FramePadding,
+            ImGuiStyleVar_.ImGuiStyleVar_ItemSpacing => style.ItemSpacing,
+            ImGuiStyleVar_.ImGuiStyleVar_ItemInnerSpacing => style.ItemInnerSpacing,
+            ImGuiStyleVar_.ImGuiStyleVar_CellPadding => style.CellPadding,
+            ImGuiStyleVar_.ImGuiStyleVar_ButtonTextAlign => style.ButtonTextAlign,
+            ImGuiStyleVar_.ImGuiStyleVar_SelectableTextAlign => style.SelectableTextAlign,
+            _ => ImVec2.Zero
+        };
+    }
+
+    private static void SetStyleVar(ImGuiStyleVar_ idx, float val)
+    {
+        ref var style = ref GetStyle();
+        switch (idx)
+        {
+            case ImGuiStyleVar_.ImGuiStyleVar_Alpha: style.Alpha = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_DisabledAlpha: style.DisabledAlpha = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_IndentSpacing: style.IndentSpacing = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_ScrollbarSize: style.ScrollbarSize = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_ScrollbarRounding: style.ScrollbarRounding = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_GrabMinSize: style.GrabMinSize = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_GrabRounding: style.GrabRounding = val; break;
+        }
+    }
+
+    private static void SetStyleVar(ImGuiStyleVar_ idx, ImVec2 val)
+    {
+        ref var style = ref GetStyle();
+        switch (idx)
+        {
+            case ImGuiStyleVar_.ImGuiStyleVar_WindowPadding: style.WindowPadding = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_WindowMinSize: style.WindowMinSize = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_WindowTitleAlign: style.WindowTitleAlign = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_FramePadding: style.FramePadding = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_ItemSpacing: style.ItemSpacing = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_ItemInnerSpacing: style.ItemInnerSpacing = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_CellPadding: style.CellPadding = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_ButtonTextAlign: style.ButtonTextAlign = val; break;
+            case ImGuiStyleVar_.ImGuiStyleVar_SelectableTextAlign: style.SelectableTextAlign = val; break;
+        }
     }
 
     private static uint ColorConvertFloat4ToU32(ImVec4 col)

@@ -43,6 +43,7 @@ public sealed class ImGuiContext
     internal ImGuiID DragDropSourceId;
     internal ImGuiID DragDropTargetId;
     internal bool DragDropActive;
+    internal readonly Stack<(ImGuiStyleVar_ idx, float f, ImVec2 v, bool isVec2)> StyleVarStack = new();
 
     public ImGuiContext()
     {

@@ -195,6 +195,17 @@ public class WidgetTests
     }
 
     [Fact]
+    public void PushStyleVar_float_restores_alpha()
+    {
+        ImGui.CreateContext();
+        var before = ImGui.GetStyle().Alpha;
+        ImGui.PushStyleVar(ImGuiStyleVar_.ImGuiStyleVar_Alpha, 0.5f);
+        Assert.Equal(0.5f, ImGui.GetStyle().Alpha);
+        ImGui.PopStyleVar();
+        Assert.Equal(before, ImGui.GetStyle().Alpha);
+    }
+
+    [Fact]
     public void Separator_adds_draw_command()
     {
         ImGui.CreateContext();
@@ -281,6 +292,18 @@ public class WidgetTests
         var drawList = dd.CmdLists[0];
         Assert.Single(drawList.TextBuffer);
         Assert.Equal("Color", drawList.TextBuffer[0].Text);
+    }
+
+    [Fact]
+    public void PushStyleVar_overrides_and_restores_spacing()
+    {
+        ImGui.CreateContext();
+        var style = ImGui.GetStyle();
+        var original = style.ItemSpacing;
+        ImGui.PushStyleVar(ImGuiStyleVar_.ImGuiStyleVar_ItemSpacing, new ImVec2(10, 10));
+        Assert.Equal(new ImVec2(10, 10), ImGui.GetStyle().ItemSpacing);
+        ImGui.PopStyleVar();
+        Assert.Equal(original, ImGui.GetStyle().ItemSpacing);
     }
 
     [Fact]
