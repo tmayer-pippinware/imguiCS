@@ -24,6 +24,8 @@ public class ImGuiContextTests
         Assert.Equal(8.0f, style.WindowPadding.y);
         Assert.Equal(14.0f, style.ScrollbarSize);
         Assert.Equal((int)ImGuiCol_.ImGuiCol_COUNT, style.Colors.Length);
+        Assert.Equal(new ImVec4(1f, 1f, 1f, 1f), style.Colors[(int)ImGuiCol_.ImGuiCol_Text]);
+        Assert.Equal(new ImVec4(0.06f, 0.06f, 0.06f, 0.94f), style.Colors[(int)ImGuiCol_.ImGuiCol_WindowBg]);
     }
 
     [Fact]

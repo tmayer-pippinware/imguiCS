@@ -5,6 +5,8 @@ namespace ImGui;
 
 public struct ImGuiIO
 {
+    internal ImGuiContext? Context;
+
     // Settings
     public ImGuiConfigFlags_ ConfigFlags;
     public ImGuiBackendFlags_ BackendFlags;
@@ -77,6 +79,7 @@ public struct ImGuiIO
     public float[] MouseDownDurationPrev;
     public ImGuiKeyData[] KeysData;
     public bool AppAcceptingEvents;
+    public ushort InputQueueSurrogate;
 
     public ImGuiIO()
     {
@@ -144,6 +147,51 @@ public struct ImGuiIO
         }
 
         AppAcceptingEvents = true;
+    }
+
+    public void AddInputCharacter(uint c)
+    {
+        var ctx = Context;
+        if (ctx == null || c == 0 || !AppAcceptingEvents)
+            return;
+
+        ImGuiInputEvent e = new()
+        {
+            Type = ImGuiInputEventType.Text,
+            Source = ImGuiInputSource.Keyboard,
+            EventId = ctx.InputEventsNextEventId++,
+            Text = new ImGuiInputEventText { Char = c },
+        };
+        ctx.EnqueueInputEvent(e);
+    }
+
+    public void AddInputCharacterUTF16(ushort c)
+    {
+        if ((c == 0 && InputQueueSurrogate == 0) || !AppAcceptingEvents)
+            return;
+
+        if ((c & 0xFC00) == 0xD800) // high surrogate
+        {
+            if (InputQueueSurrogate != 0)
+                AddInputCharacter(0xFFFD);
+            InputQueueSurrogate = c;
+            return;
+        }
+
+        uint cp = c;
+        if (InputQueueSurrogate != 0)
+        {
+            if ((c & 0xFC00) != 0xDC00)
+            {
+                AddInputCharacter(0xFFFD);
+                InputQueueSurrogate = 0;
+                return;
+            }
+            cp = (uint)(((InputQueueSurrogate - 0xD800) << 10) + (c - 0xDC00) + 0x10000);
+            InputQueueSurrogate = 0;
+        }
+
+        AddInputCharacter(cp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

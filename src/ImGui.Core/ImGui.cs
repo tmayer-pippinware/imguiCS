@@ -56,4 +56,22 @@ public static partial class ImGui
         if (_currentContext == null)
             throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
     }
+
+    public static void AddInputCharacter(uint c)
+    {
+        ref var io = ref GetIO();
+        io.AddInputCharacter(c);
+    }
+
+    public static void AddInputCharacterUTF16(ushort c)
+    {
+        ref var io = ref GetIO();
+        io.AddInputCharacterUTF16(c);
+    }
+
+    public static void StyleColorsDark()
+    {
+        ref var style = ref GetStyle();
+        ImGuiStyle.StyleColorsDark(ref style);
+    }
 }
