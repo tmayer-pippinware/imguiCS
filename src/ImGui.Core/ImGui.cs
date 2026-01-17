@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace ImGui;
 
@@ -566,11 +567,14 @@ public static partial class ImGui
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
-        var size = CalcTextSize(text, ctx);
+        text ??= string.Empty;
+        int end = FindRenderedTextEnd(text);
+        string display = end == text.Length ? text : text.Substring(0, end);
+        var size = CalcTextSize(display, ctx, hideTextAfterDoubleHash: false);
         var pos = window.DC.CursorPos;
         var posScreen = ToScreen(window, pos);
         uint col = GetColorU32(ImGuiCol_.ImGuiCol_Text);
-        window.DrawList.AddText(posScreen, col, text);
+        window.DrawList.AddText(posScreen, col, display);
         AdvanceCursorForItem(ctx, window, new ImRect(pos, new ImVec2(pos.x + size.x, pos.y + size.y)));
         window.DC.LastItemId = 0;
         ctx.LastItemID = 0;
@@ -579,6 +583,15 @@ public static partial class ImGui
     public static void TextColored(ImVec4 col, string text)
     {
         PushStyleColor(ImGuiCol_.ImGuiCol_Text, col);
+        TextUnformatted(text);
+        PopStyleColor();
+    }
+
+    public static void TextDisabled(string text)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var disabledCol = ctx.Style.Colors[(int)ImGuiCol_.ImGuiCol_TextDisabled];
+        PushStyleColor(ImGuiCol_.ImGuiCol_Text, disabledCol);
         TextUnformatted(text);
         PopStyleColor();
     }
@@ -594,37 +607,68 @@ public static partial class ImGui
             return;
         }
 
-        var words = text.Split(' ');
-        string line = "";
-        for (int i = 0; i < words.Length; i++)
+        text ??= string.Empty;
+        int end = FindRenderedTextEnd(text);
+        string display = end == text.Length ? text : text.Substring(0, end);
+        var hardLines = display.Split('\n');
+        var lines = new List<string>();
+        foreach (var hard in hardLines)
         {
-            var candidate = string.IsNullOrEmpty(line) ? words[i] : line + " " + words[i];
-            float lineWidth = CalcTextSize(candidate, ctx).x;
-            if (lineWidth > wrapWidth && !string.IsNullOrEmpty(line))
+            var words = hard.Split(' ');
+            string current = "";
+            foreach (var word in words)
             {
-                TextUnformatted(line);
-                line = words[i];
+                var candidate = string.IsNullOrEmpty(current) ? word : current + " " + word;
+                float candidateWidth = CalcTextSize(candidate, ctx, hideTextAfterDoubleHash: false).x;
+                if (candidateWidth > wrapWidth && !string.IsNullOrEmpty(current))
+                {
+                    lines.Add(current);
+                    current = word;
+                }
+                else
+                {
+                    current = candidate;
+                }
             }
-            else
-            {
-                line = candidate;
-            }
+            lines.Add(current);
         }
-        if (!string.IsNullOrEmpty(line))
-            TextUnformatted(line);
+
+        var basePos = window.DC.CursorPos;
+        float maxLineWidth = 0.0f;
+        float y = basePos.y;
+        foreach (var line in lines)
+        {
+            var lineSize = CalcTextSize(line, ctx, hideTextAfterDoubleHash: false);
+            window.DrawList.AddText(ToScreen(window, new ImVec2(basePos.x, y)), GetColorU32(ImGuiCol_.ImGuiCol_Text), line);
+            maxLineWidth = Math.Max(maxLineWidth, lineSize.x);
+            y += lineSize.y;
+        }
+        var bb = new ImRect(basePos, new ImVec2(basePos.x + maxLineWidth, y));
+        AdvanceCursorForItem(ctx, window, bb);
+        window.DC.LastItemId = 0;
+        ctx.LastItemID = 0;
     }
 
     public static void BulletText(string text)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
-        float bulletRadius = GetTextLineHeight() * 0.2f;
+        text ??= string.Empty;
+        int end = FindRenderedTextEnd(text);
+        string display = end == text.Length ? text : text.Substring(0, end);
+        float lineHeight = GetTextLineHeight();
+        float bulletRadius = lineHeight * 0.2f;
         var pos = window.DC.CursorPos;
-        var bulletMin = ToScreen(window, new ImVec2(pos.x, pos.y + GetTextLineHeight() * 0.5f - bulletRadius));
-        var bulletMax = ToScreen(window, new ImVec2(pos.x + bulletRadius * 2, pos.y + GetTextLineHeight() * 0.5f + bulletRadius));
+        var bulletMin = ToScreen(window, new ImVec2(pos.x, pos.y + lineHeight * 0.5f - bulletRadius));
+        var bulletMax = ToScreen(window, new ImVec2(pos.x + bulletRadius * 2, pos.y + lineHeight * 0.5f + bulletRadius));
         window.DrawList.AddRectFilled(bulletMin, bulletMax, GetColorU32(ImGuiCol_.ImGuiCol_Text));
-        window.DC.CursorPos = new ImVec2(window.DC.CursorPos.x + bulletRadius * 2 + ctx.Style.ItemSpacing.x, window.DC.CursorPos.y);
-        TextUnformatted(text);
+        var textPos = new ImVec2(pos.x + bulletRadius * 2 + ctx.Style.ItemSpacing.x, pos.y);
+        window.DrawList.AddText(ToScreen(window, textPos), GetColorU32(ImGuiCol_.ImGuiCol_Text), display);
+        var textSize = CalcTextSize(display, ctx, hideTextAfterDoubleHash: false);
+        var bb = new ImRect(pos, new ImVec2(textPos.x + textSize.x, pos.y + Math.Max(textSize.y, lineHeight)));
+        AdvanceCursorForItem(ctx, window, bb);
+        window.DC.LastItemId = 0;
+        ctx.LastItemID = 0;
     }
 
     public static bool TreeNode(string label)
@@ -633,8 +677,9 @@ public static partial class ImGui
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         ImGuiID id = GetID(label);
         bool open = window.StateStorage.GetBool(id, false);
+        var visibleLabel = GetLabelText(label);
         var style = ctx.Style;
-        var labelSize = CalcTextSize(label, ctx);
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
         float height = GetTextLineHeightWithSpacing();
         var pos = window.DC.CursorPos;
         var bb = new ImRect(pos, new ImVec2(pos.x + labelSize.x + style.FramePadding.x * 2 + height, pos.y + height));
@@ -666,9 +711,9 @@ public static partial class ImGui
         else if (hovered) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderHovered);
         window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, bg);
 
-        string arrow = open ? "▼ " : "▶ ";
+        string arrow = open ? "v " : "> ";
         var textPos = new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y);
-        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), arrow + label);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), arrow + visibleLabel);
 
         window.StateStorage.SetBool(id, open);
         window.DC.LastItemId = id;
@@ -758,10 +803,11 @@ public static partial class ImGui
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
         ImGuiID id = GetID(label);
         var pos = window.DC.CursorPos;
         var style = ctx.Style;
-        var labelSize = CalcTextSize(label, ctx);
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
         var size = new ImVec2(labelSize.x + style.FramePadding.x * 2, labelSize.y + style.FramePadding.y * 2);
         if (ctx.NextItemData.HasSize && ctx.NextItemData.ItemSize.x > 0)
             size.x = ctx.NextItemData.ItemSize.x;
@@ -788,7 +834,7 @@ public static partial class ImGui
 
         window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, col);
         var textPos = new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y);
-        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), label);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, bb);
@@ -800,13 +846,14 @@ public static partial class ImGui
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
         ImGuiID id = GetID(label);
         var style = ctx.Style;
         float squareSz = ctx.Style.FontSizeBase + style.FramePadding.y * 2;
         var pos = window.DC.CursorPos;
         var boxMin = pos;
         var boxMax = new ImVec2(pos.x + squareSz, pos.y + squareSz);
-        var labelSize = CalcTextSize(label, ctx);
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
         var textPos = new ImVec2(boxMax.x + style.ItemSpacing.x, pos.y + style.FramePadding.y);
         var bb = new ImRect(pos, new ImVec2(textPos.x + labelSize.x, boxMax.y));
         if (!ItemAdd(ctx, window, bb, id))
@@ -837,7 +884,7 @@ public static partial class ImGui
                 ToScreen(window, new ImVec2(boxMax.x - pad, boxMax.y - pad)),
                 GetColorU32(ImGuiCol_.ImGuiCol_CheckMark));
         }
-        window.DrawList.AddText(textPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), label);
+        window.DrawList.AddText(textPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, bb);
@@ -849,12 +896,13 @@ public static partial class ImGui
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
         ImGuiID id = GetID(label);
         var style = ctx.Style;
         float radius = (ctx.Style.FontSizeBase + style.FramePadding.y * 2) * 0.5f;
         var pos = window.DC.CursorPos;
         var center = new ImVec2(pos.x + radius, pos.y + radius);
-        var labelSize = CalcTextSize(label, ctx);
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
         var textPos = new ImVec2(pos.x + radius * 2 + style.ItemSpacing.x, pos.y + style.FramePadding.y);
         var bb = new ImRect(pos, new ImVec2(textPos.x + labelSize.x, pos.y + radius * 2));
         if (!ItemAdd(ctx, window, bb, id))
@@ -886,7 +934,7 @@ public static partial class ImGui
                 ToScreen(window, new ImVec2(pos.x + radius * 2 - pad, pos.y + radius * 2 - pad)),
                 GetColorU32(ImGuiCol_.ImGuiCol_CheckMark));
         }
-        window.DrawList.AddText(textPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), label);
+        window.DrawList.AddText(textPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, bb);
@@ -898,9 +946,10 @@ public static partial class ImGui
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
         ImGuiID id = GetID(label);
         var style = ctx.Style;
-        var labelSize = CalcTextSize(label, ctx);
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
         float sliderWidth = 150.0f;
         sliderWidth = GetEffectiveItemWidth(ctx, sliderWidth);
 
@@ -956,7 +1005,7 @@ public static partial class ImGui
         var grabMax = new ImVec2(grabX0 + grabWidth, bbScreen.Max.y);
         window.DrawList.AddRectFilled(grabMin, grabMax, GetColorU32(ImGuiCol_.ImGuiCol_SliderGrab));
 
-        window.DrawList.AddText(labelPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), label);
+        RenderTextClipped(window, labelPos, new ImVec2(labelPos.x + labelSize.x, labelPos.y + labelSize.y), visibleLabel, labelSize);
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, new ImRect(bb.Min, new ImVec2(bb.Max.x + labelSize.x + style.ItemSpacing.x, bb.Max.y)));
@@ -1074,13 +1123,73 @@ public static partial class ImGui
         return (a << 24) | (b << 16) | (g << 8) | r;
     }
 
-    private static ImVec2 CalcTextSize(string text, ImGuiContext ctx)
+    private static int FindRenderedTextEnd(string text, int textEnd = -1)
     {
+        if (string.IsNullOrEmpty(text))
+            return 0;
+        int length = text.Length;
+        int end = textEnd >= 0 && textEnd < length ? textEnd : length;
+        int hashPos = text.IndexOf("##", 0, end, StringComparison.Ordinal);
+        return hashPos >= 0 ? hashPos : end;
+    }
+
+    private static string GetLabelText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return string.Empty;
+        int end = FindRenderedTextEnd(text);
+        return end == text.Length ? text : text.Substring(0, end);
+    }
+
+    private static ImVec2 CalcTextSize(string text, ImGuiContext ctx, bool hideTextAfterDoubleHash = true, float wrapWidth = -1.0f)
+    {
+        text ??= string.Empty;
+        int end = hideTextAfterDoubleHash ? FindRenderedTextEnd(text) : text.Length;
+        if (end <= 0)
+        {
+            float emptyHeight = (ctx.Style.FontSizeBase > 0 ? ctx.Style.FontSizeBase : 13.0f) * (ctx.IO.FontGlobalScale > 0 ? ctx.IO.FontGlobalScale : 1.0f);
+            return new ImVec2(0, emptyHeight);
+        }
+
+        string visibleText = text.AsSpan(0, end).ToString();
         float fontSize = ctx.Style.FontSizeBase > 0 ? ctx.Style.FontSizeBase : 13.0f;
         float scale = ctx.IO.FontGlobalScale > 0 ? ctx.IO.FontGlobalScale : 1.0f;
         fontSize *= scale;
-        float width = text.Length * fontSize * 0.55f;
-        return new ImVec2(width, fontSize);
+        float charWidth = fontSize * 0.55f;
+        float maxWidth = 0.0f;
+        float totalHeight = fontSize;
+        float wrapLimit = wrapWidth > 0 ? wrapWidth : float.MaxValue;
+
+        var hardLines = visibleText.Split('\n');
+        for (int lineIndex = 0; lineIndex < hardLines.Length; lineIndex++)
+        {
+            var hard = hardLines[lineIndex];
+            float lineWidth = 0.0f;
+            var words = hard.Split(' ');
+            for (int i = 0; i < words.Length; i++)
+            {
+                string word = words[i];
+                float wordWidth = word.Length * charWidth;
+                float space = i == 0 ? 0.0f : charWidth;
+                if (wrapWidth > 0 && lineWidth + space + wordWidth > wrapLimit && lineWidth > 0.0f)
+                {
+                    maxWidth = Math.Max(maxWidth, lineWidth);
+                    totalHeight += fontSize;
+                    lineWidth = wordWidth;
+                }
+                else
+                {
+                    if (i != 0)
+                        lineWidth += space;
+                    lineWidth += wordWidth;
+                }
+            }
+            maxWidth = Math.Max(maxWidth, lineWidth);
+            if (lineIndex < hardLines.Length - 1)
+                totalHeight += fontSize;
+        }
+
+        return new ImVec2(maxWidth, totalHeight);
     }
 
     private static void AdvanceCursorForItem(ImGuiContext ctx, ImGuiWindow window, ImRect bb)
@@ -1092,6 +1201,19 @@ public static partial class ImGui
     private static ImVec2 ToScreen(ImGuiWindow window, ImVec2 local)
     {
         return new ImVec2(window.Pos.x + local.x, window.Pos.y + local.y);
+    }
+
+    private static void RenderTextClipped(ImGuiWindow window, ImVec2 posMin, ImVec2 posMax, string text, ImVec2 textSize, ImVec2? align = null)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        text ??= string.Empty;
+        int end = FindRenderedTextEnd(text);
+        string display = end == text.Length ? text : text.Substring(0, end);
+        var alignment = align ?? ImVec2.Zero;
+        var avail = new ImVec2(Math.Max(0, posMax.x - posMin.x), Math.Max(0, posMax.y - posMin.y));
+        var offset = new ImVec2(alignment.x * Math.Max(0, avail.x - textSize.x), alignment.y * Math.Max(0, avail.y - textSize.y));
+        var pos = new ImVec2(posMin.x + offset.x, posMin.y + offset.y);
+        window.DrawList.AddText(ToScreen(window, pos), GetColorU32(ImGuiCol_.ImGuiCol_Text), display);
     }
 
     private static float GetEffectiveItemWidth(ImGuiContext ctx, float defaultWidth)
@@ -1132,7 +1254,8 @@ public static partial class ImGui
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         var style = ctx.Style;
-        var labelSize = CalcTextSize(label, ctx);
+        var visibleLabel = GetLabelText(label);
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
         float headerWidth = GetContentRegionAvail().x;
         if (headerWidth <= 0)
             headerWidth = labelSize.x + style.FramePadding.x * 2;
@@ -1163,12 +1286,13 @@ public static partial class ImGui
         else if (hovered) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderHovered);
         window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, bg);
 
-        string prefix = open ? "▾ " : "▸ ";
+        string prefix = open ? "v " : "> ";
         var textPos = new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y);
-        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), prefix + label);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), prefix + visibleLabel);
 
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
+        _lastItemToggledOpen = pressed;
         AdvanceCursorForItem(ctx, window, bb);
         ctx.NextItemData.Clear();
         return pressed;

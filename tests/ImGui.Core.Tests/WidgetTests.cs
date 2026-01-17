@@ -20,6 +20,20 @@ public class WidgetTests
     }
 
     [Fact]
+    public void Button_uses_visible_label_with_hash_suffix()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Button");
+        ImGui.Button("Click##Hidden");
+        var drawList = ImGui.GetWindowDrawList();
+        Assert.Contains(drawList.TextBuffer, t => t.Text == "Click");
+        var idWithSuffix = ImGui.GetID("Click##Hidden");
+        var idWithoutSuffix = ImGui.GetID("Click");
+        Assert.NotEqual(idWithoutSuffix, idWithSuffix);
+        ImGui.End();
+    }
+
+    [Fact]
     public void PushID_changes_GetID()
     {
         ImGui.CreateContext();
@@ -47,6 +61,20 @@ public class WidgetTests
         var windowList = dd.CmdLists[0];
         Assert.Single(windowList.TextBuffer);
         Assert.Equal("Hello", windowList.TextBuffer[0].Text);
+    }
+
+    [Fact]
+    public void Text_hides_id_suffix_when_rendered()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Text");
+        ImGui.Text("Hello##Hidden");
+        ImGui.End();
+        ImGui.Render();
+
+        var dd = ImGui.GetDrawData();
+        Assert.Equal("Hello", dd.CmdLists[0].TextBuffer[0].Text);
     }
 
     [Fact]
@@ -191,6 +219,20 @@ public class WidgetTests
     }
 
     [Fact]
+    public void TextDisabled_uses_disabled_color()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Text");
+        ImGui.TextDisabled("Muted");
+        ImGui.End();
+        ImGui.Render();
+        var cmd = ImGui.GetDrawData().CmdLists[0].TextBuffer[0];
+        Assert.Equal("Muted", cmd.Text);
+        Assert.Equal(ImGui.GetColorU32(ImGuiCol_.ImGuiCol_TextDisabled), cmd.Color);
+    }
+
+    [Fact]
     public void SliderFloat_updates_value_on_click()
     {
         ImGui.CreateContext();
@@ -269,6 +311,21 @@ public class WidgetTests
         var dd = ImGui.GetDrawData();
         Assert.Equal(2, dd.CmdLists.Count);
         Assert.True(dd.CmdLists[0].TextBuffer.Count >= 2);
+    }
+
+    [Fact]
+    public void TextWrapped_strips_id_suffix_and_wraps_lines()
+    {
+        ImGui.CreateContext();
+        ImGui.SetNextWindowSize(new ImVec2(50, 100));
+        ImGui.NewFrame();
+        ImGui.Begin("Wrap");
+        ImGui.TextWrapped("Word Word Word##Hidden");
+        ImGui.End();
+        ImGui.Render();
+        var texts = ImGui.GetDrawData().CmdLists[0].TextBuffer;
+        Assert.All(texts, t => Assert.DoesNotContain("##", t.Text));
+        Assert.True(texts.Count >= 2);
     }
 
     [Fact]
