@@ -158,6 +158,51 @@ public struct ImGuiStyle
         StyleColorsDark(ref this);
     }
 
+    public void ScaleAllSizes(float scaleFactor)
+    {
+        _MainScale *= scaleFactor;
+        WindowPadding = ImTrunc(WindowPadding * scaleFactor);
+        WindowRounding = ImTrunc(WindowRounding * scaleFactor);
+        WindowBorderSize = ImTrunc(WindowBorderSize * scaleFactor);
+        WindowMinSize = ImTrunc(WindowMinSize * scaleFactor);
+        WindowBorderHoverPadding = ImTrunc(WindowBorderHoverPadding * scaleFactor);
+        ChildRounding = ImTrunc(ChildRounding * scaleFactor);
+        PopupRounding = ImTrunc(PopupRounding * scaleFactor);
+        FramePadding = ImTrunc(FramePadding * scaleFactor);
+        FrameRounding = ImTrunc(FrameRounding * scaleFactor);
+        ItemSpacing = ImTrunc(ItemSpacing * scaleFactor);
+        ItemInnerSpacing = ImTrunc(ItemInnerSpacing * scaleFactor);
+        CellPadding = ImTrunc(CellPadding * scaleFactor);
+        TouchExtraPadding = ImTrunc(TouchExtraPadding * scaleFactor);
+        IndentSpacing = ImTrunc(IndentSpacing * scaleFactor);
+        ColumnsMinSpacing = ImTrunc(ColumnsMinSpacing * scaleFactor);
+        ScrollbarSize = ImTrunc(ScrollbarSize * scaleFactor);
+        ScrollbarRounding = ImTrunc(ScrollbarRounding * scaleFactor);
+        ScrollbarPadding = ImTrunc(ScrollbarPadding * scaleFactor);
+        GrabMinSize = ImTrunc(GrabMinSize * scaleFactor);
+        GrabRounding = ImTrunc(GrabRounding * scaleFactor);
+        LogSliderDeadzone = ImTrunc(LogSliderDeadzone * scaleFactor);
+        ImageRounding = ImTrunc(ImageRounding * scaleFactor);
+        ImageBorderSize = ImTrunc(ImageBorderSize * scaleFactor);
+        TabRounding = ImTrunc(TabRounding * scaleFactor);
+        TabMinWidthBase = ImTrunc(TabMinWidthBase * scaleFactor);
+        TabMinWidthShrink = ImTrunc(TabMinWidthShrink * scaleFactor);
+        if (TabCloseButtonMinWidthSelected > 0.0f && TabCloseButtonMinWidthSelected != float.MaxValue)
+            TabCloseButtonMinWidthSelected = ImTrunc(TabCloseButtonMinWidthSelected * scaleFactor);
+        if (TabCloseButtonMinWidthUnselected > 0.0f && TabCloseButtonMinWidthUnselected != float.MaxValue)
+            TabCloseButtonMinWidthUnselected = ImTrunc(TabCloseButtonMinWidthUnselected * scaleFactor);
+        TabBarOverlineSize = ImTrunc(TabBarOverlineSize * scaleFactor);
+        TreeLinesRounding = ImTrunc(TreeLinesRounding * scaleFactor);
+        DragDropTargetRounding = ImTrunc(DragDropTargetRounding * scaleFactor);
+        DragDropTargetBorderSize = ImTrunc(DragDropTargetBorderSize * scaleFactor);
+        DragDropTargetPadding = ImTrunc(DragDropTargetPadding * scaleFactor);
+        ColorMarkerSize = ImTrunc(ColorMarkerSize * scaleFactor);
+        SeparatorTextPadding = ImTrunc(SeparatorTextPadding * scaleFactor);
+        DisplayWindowPadding = ImTrunc(DisplayWindowPadding * scaleFactor);
+        DisplaySafeAreaPadding = ImTrunc(DisplaySafeAreaPadding * scaleFactor);
+        MouseCursorScale = ImTrunc(MouseCursorScale * scaleFactor);
+    }
+
     public static void StyleColorsDark(ref ImGuiStyle dst)
     {
         var colors = dst.Colors;
@@ -222,4 +267,7 @@ public struct ImGuiStyle
         colors[(int)ImGuiCol_.ImGuiCol_NavWindowingDimBg]      = new ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
         colors[(int)ImGuiCol_.ImGuiCol_ModalWindowDimBg]       = new ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
     }
+
+    private static float ImTrunc(float v) => (float)Math.Floor(v);
+    private static ImVec2 ImTrunc(ImVec2 v) => new(ImTrunc(v.x), ImTrunc(v.y));
 }

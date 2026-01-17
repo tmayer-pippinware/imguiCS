@@ -31,6 +31,7 @@ public sealed class ImGuiContext
         ref var io = ref IO;
 
         // Apply queued events.
+        io.InputQueueCharacters.Clear();
         for (int i = 0; i < InputEventsQueue.Count; i++)
         {
             var evt = InputEventsQueue[i];

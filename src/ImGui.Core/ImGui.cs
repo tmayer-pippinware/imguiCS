@@ -5,6 +5,7 @@ namespace ImGui;
 public static partial class ImGui
 {
     private static ImGuiContext? _currentContext;
+    private static readonly ImDrawData _drawData = new();
 
     public static ImGuiContext CreateContext(ImFontAtlas? sharedFontAtlas = null)
     {
@@ -50,12 +51,27 @@ public static partial class ImGui
         if (ctx.IO.DeltaTime <= 0f)
             ctx.IO.DeltaTime = 1f / 60f;
         ctx.ProcessInputEvents();
+        _drawData.Reset();
     }
 
     public static void EndFrame()
     {
         if (_currentContext == null)
             throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+    }
+
+    public static void Render()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        _drawData.Valid = true;
+        _drawData.DisplayPos = new ImVec2(0, 0);
+        _drawData.DisplaySize = ctx.IO.DisplaySize;
+        _drawData.FramebufferScale = ctx.IO.DisplayFramebufferScale;
+    }
+
+    public static ImDrawData GetDrawData()
+    {
+        return _drawData;
     }
 
     public static void AddInputCharacter(uint c)
@@ -69,6 +85,19 @@ public static partial class ImGui
         ref var io = ref GetIO();
         io.AddInputCharacterUTF16(c);
     }
+
+    public static void AddInputCharactersUTF8(string utf8)
+    {
+        ref var io = ref GetIO();
+        io.AddInputCharactersUTF8(System.Text.Encoding.UTF8.GetBytes(utf8));
+    }
+
+    public static void AddKeyEvent(ImGuiKey key, bool down) => GetIO().AddKeyEvent(key, down);
+    public static void AddMousePosEvent(float x, float y) => GetIO().AddMousePosEvent(x, y);
+    public static void AddMouseButtonEvent(int button, bool down) => GetIO().AddMouseButtonEvent(button, down);
+    public static void AddMouseWheelEvent(float wheelX, float wheelY) => GetIO().AddMouseWheelEvent(wheelX, wheelY);
+    public static void AddMouseSourceEvent(ImGuiMouseSource source) => GetIO().AddMouseSourceEvent(source);
+    public static void AddFocusEvent(bool focused) => GetIO().AddFocusEvent(focused);
 
     public static void StyleColorsDark()
     {
