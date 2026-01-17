@@ -53,4 +53,16 @@ public class InputEventTests
         ImGui.NewFrame();
         Assert.False(io.KeyCtrl);
     }
+
+    [Fact]
+    public void Focus_event_clears_inputs_on_loss()
+    {
+        ImGui.CreateContext();
+        ref var io = ref ImGui.GetIO();
+        io.AddMouseButtonEvent(0, true);
+        io.AddFocusEvent(false);
+        ImGui.NewFrame();
+        Assert.False(io.MouseDown[0]);
+        Assert.True(io.AppFocusLost);
+    }
 }
