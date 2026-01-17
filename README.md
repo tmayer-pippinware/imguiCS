@@ -24,7 +24,7 @@ Upstream reference: `imgui_reference` snapshot (v1.92.6 WIP). Coverage is tracke
 | Tables                  | `imgui_tables.cpp`                 | Planned               | Structs outlined; behaviors and sort specs not yet ported. |
 | Demo/window tooling     | `imgui_demo.cpp`                   | Planned               | Not yet ported; will follow once widget parity improves. |
 | Internal structs        | `imgui_internal.h`                 | In progress           | Core window/temp data seeded; full layout/padding/flags to mirror. |
-| Backends (SDL2 focus)   | `backends/imgui_impl_*`            | Planned               | Scope narrowed to SDL2 platform + GL/SDL renderer; no implementation yet. |
+| Backends (SDL2 focus)   | `backends/imgui_impl_*`            | In progress           | SDL2-CS platform/renderer backends available (event routing, SDL renderer sketching); textured rendering/IME/clipboard still pending. |
 | Examples                | `examples/` (SDL2 paths)           | Planned               | Will mirror SDL2 example set after backend landing. |
 | Tools/misc              | `misc/*` (freetype/stdlib/tools)   | Planned               | FreeType/CLI helpers not yet ported. |
 

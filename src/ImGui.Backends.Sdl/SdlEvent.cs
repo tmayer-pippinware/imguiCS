@@ -6,4 +6,6 @@ namespace ImGui.Backends.Sdl;
 public struct SdlEvent
 {
     public int Type;
+    public int Data1;
+    public int Data2;
 }

@@ -3,10 +3,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <NoWarn>1591</NoWarn>
+    <NoWarn>1591;1570;1574;1584;1658;8605;8625;8603</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ImGui.Core\ImGui.Core.csproj" />
+    <PackageReference Include="SDL2-CS" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(NuGetPackageRoot)sdl2-cs/2.0.0/content/net20/SDL2-CS/*.cs"
+             Link="SDL2-CS\%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
