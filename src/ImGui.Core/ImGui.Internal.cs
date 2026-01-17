@@ -29,12 +29,14 @@ internal sealed class ImGuiWindowTempData
 {
     public ImVec2 CursorPos;
     public ImVec2 CursorStartPos;
+    public ImVec2 CursorMax;
     public float IndentX;
     public ImRect ClipRect;
     public int TreeDepth;
     public ImGuiID LastItemId;
     public ImRect LastItemRect;
     public ImGuiStorage StateStorage { get; } = new ImGuiStorage();
+    public Stack<ImGuiGroupData> GroupStack { get; } = new();
 }
 
 internal sealed class ImGuiTable
@@ -87,6 +89,15 @@ internal struct ImGuiNextItemData
         HasSize = false;
         ItemSize = ImVec2.Zero;
     }
+}
+
+internal struct ImGuiGroupData
+{
+    public ImVec2 BackupCursorPos;
+    public ImVec2 BackupCursorStartPos;
+    public float BackupIndentX;
+    public ImVec2 GroupMin;
+    public ImVec2 GroupMax;
 }
 
 internal static class ImHash

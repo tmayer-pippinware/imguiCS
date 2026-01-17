@@ -250,6 +250,7 @@ public static partial class ImGui
         window.DC.IndentX = 0;
         window.DC.CursorStartPos = new ImVec2(ctx.Style.WindowPadding.x + window.DC.IndentX, ctx.Style.WindowPadding.y);
         window.DC.CursorPos = window.DC.CursorStartPos;
+        window.DC.CursorMax = window.DC.CursorPos;
         window.DC.LastItemRect = new ImRect(window.DC.CursorPos, window.DC.CursorPos);
         window.DC.ClipRect = new ImRect(window.Pos, new ImVec2(window.Pos.x + window.Size.x, window.Pos.y + window.Size.y));
         return true;
@@ -264,6 +265,65 @@ public static partial class ImGui
             ctx.IDStack.Pop();
         ctx.CurrentWindow = ctx.WindowStack.Count > 0 ? ctx.WindowStack.Pop() : null;
         ctx.NextItemData.Clear();
+    }
+
+    public static bool BeginChild(string str_id, ImVec2 size, bool border = false)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var parent = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+
+        if (ctx.CurrentWindow != null)
+            ctx.WindowStack.Push(ctx.CurrentWindow);
+
+        var available = GetContentRegionAvail();
+        if (size.x <= 0)
+            size.x = available.x;
+        if (size.y <= 0)
+            size.y = available.y;
+
+        string name = parent.Name + "/" + str_id;
+        var child = ctx.Windows.Find(w => w.Name == name);
+        if (child == null)
+        {
+            child = new ImGuiWindow(name);
+            ctx.Windows.Add(child);
+        }
+        ctx.CurrentWindow = child;
+        child.ID = ImHash.Hash(name);
+        ctx.IDStack.Push(ImHash.Hash(name, ctx.IDStack.Peek()));
+        child.DrawList.Clear();
+        child.Pos = ToScreen(parent, parent.DC.CursorPos);
+        child.Size = size;
+        child.DC.IndentX = 0;
+        child.DC.CursorStartPos = new ImVec2(ctx.Style.WindowPadding.x + child.DC.IndentX, ctx.Style.WindowPadding.y);
+        child.DC.CursorPos = child.DC.CursorStartPos;
+        child.DC.LastItemRect = new ImRect(child.DC.CursorPos, child.DC.CursorPos);
+        child.DC.CursorMax = child.DC.CursorPos;
+        child.DC.ClipRect = new ImRect(child.Pos, new ImVec2(child.Pos.x + child.Size.x, child.Pos.y + child.Size.y));
+
+        var childBb = new ImRect(parent.DC.CursorPos, new ImVec2(parent.DC.CursorPos.x + size.x, parent.DC.CursorPos.y + size.y));
+        parent.DC.LastItemRect = childBb;
+        parent.DC.LastItemId = 0;
+        if (border)
+            parent.DrawList.AddRect(ToScreen(parent, childBb.Min), ToScreen(parent, childBb.Max), GetColorU32(ImGuiCol_.ImGuiCol_Border));
+        return true;
+    }
+
+    public static void EndChild()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var child = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        if (ctx.IDStack.Count > 1)
+            ctx.IDStack.Pop();
+        ctx.CurrentWindow = ctx.WindowStack.Count > 0 ? ctx.WindowStack.Pop() : null;
+        var parent = ctx.CurrentWindow;
+        if (parent != null)
+        {
+            var bb = parent.DC.LastItemRect;
+            AdvanceCursorForItem(ctx, parent, bb);
+            parent.DC.LastItemId = 0;
+            ctx.LastItemID = 0;
+        }
     }
 
     public static void PushID(string id)
@@ -313,6 +373,40 @@ public static partial class ImGui
             window.DC.TreeDepth--;
     }
 
+    public static void BeginGroup()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var data = new ImGuiGroupData
+        {
+            BackupCursorPos = window.DC.CursorPos,
+            BackupCursorStartPos = window.DC.CursorStartPos,
+            BackupIndentX = window.DC.IndentX,
+            GroupMin = window.DC.CursorPos,
+            GroupMax = window.DC.CursorPos
+        };
+        window.DC.GroupStack.Push(data);
+    }
+
+    public static void EndGroup()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        if (window.DC.GroupStack.Count == 0)
+            return;
+        var data = window.DC.GroupStack.Pop();
+        float groupMaxX = Math.Max(data.GroupMax.x, window.DC.LastItemRect.Max.x);
+        float groupMaxY = Math.Max(window.DC.CursorPos.y, window.DC.LastItemRect.Max.y);
+        var bb = new ImRect(data.GroupMin, new ImVec2(groupMaxX, groupMaxY));
+        window.DC.LastItemRect = bb;
+        window.DC.LastItemId = 0;
+        window.DC.CursorMax = new ImVec2(Math.Max(window.DC.CursorMax.x, bb.Max.x), Math.Max(window.DC.CursorMax.y, bb.Max.y));
+        window.DC.IndentX = data.BackupIndentX;
+        window.DC.CursorStartPos = data.BackupCursorStartPos;
+        float newY = bb.Max.y + ctx.Style.ItemSpacing.y;
+        window.DC.CursorPos = new ImVec2(window.DC.CursorStartPos.x, newY);
+    }
+
     public static ImGuiID GetItemID()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -354,6 +448,20 @@ public static partial class ImGui
         window.DC.CursorPos = localPos;
     }
 
+    public static void SetCursorPosX(float x)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        window.DC.CursorPos = new ImVec2(x, window.DC.CursorPos.y);
+    }
+
+    public static void SetCursorPosY(float y)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        window.DC.CursorPos = new ImVec2(window.DC.CursorPos.x, y);
+    }
+
     public static ImVec2 GetCursorScreenPos()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -366,6 +474,13 @@ public static partial class ImGui
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         window.DC.CursorPos = new ImVec2(screenPos.x - window.Pos.x, screenPos.y - window.Pos.y);
+    }
+
+    public static ImVec2 GetCursorStartPos()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return window.DC.CursorStartPos;
     }
 
     public static ImVec2 GetContentRegionAvail()
@@ -521,6 +636,13 @@ public static partial class ImGui
             : window.DC.LastItemRect.Max.x + spacingX;
         float newY = window.DC.LastItemRect.Min.y;
         window.DC.CursorPos = new ImVec2(newX, newY);
+    }
+
+    public static void AlignTextToFramePadding()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        window.DC.CursorPos = new ImVec2(window.DC.CursorPos.x, window.DC.CursorPos.y + ctx.Style.FramePadding.y);
     }
 
     public static void NewLine()
@@ -1195,6 +1317,13 @@ public static partial class ImGui
     private static void AdvanceCursorForItem(ImGuiContext ctx, ImGuiWindow window, ImRect bb)
     {
         window.DC.LastItemRect = bb;
+        window.DC.CursorMax = new ImVec2(Math.Max(window.DC.CursorMax.x, bb.Max.x), Math.Max(window.DC.CursorMax.y, bb.Max.y));
+        if (window.DC.GroupStack.Count > 0)
+        {
+            var top = window.DC.GroupStack.Pop();
+            top.GroupMax = new ImVec2(Math.Max(top.GroupMax.x, bb.Max.x), Math.Max(top.GroupMax.y, bb.Max.y));
+            window.DC.GroupStack.Push(top);
+        }
         window.DC.CursorPos = new ImVec2(window.DC.CursorStartPos.x, bb.Max.y + ctx.Style.ItemSpacing.y);
     }
 

@@ -130,6 +130,31 @@ public class WidgetTests
     }
 
     [Fact]
+    public void SetCursorPosX_and_Y_move_cursor()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Cursor");
+        ImGui.SetCursorPosX(20);
+        ImGui.SetCursorPosY(30);
+        var pos = ImGui.GetCursorPos();
+        Assert.Equal(20, pos.x);
+        Assert.Equal(30, pos.y);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void AlignTextToFramePadding_shifts_cursor()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Align");
+        var start = ImGui.GetCursorPos();
+        ImGui.AlignTextToFramePadding();
+        var after = ImGui.GetCursorPos();
+        Assert.True(after.y >= start.y + ImGui.GetStyle().FramePadding.y);
+        ImGui.End();
+    }
+
+    [Fact]
     public void Separator_adds_draw_command()
     {
         ImGui.CreateContext();
@@ -340,6 +365,38 @@ public class WidgetTests
         var afterUnindent = ImGui.GetCursorPos();
         Assert.True(afterIndent.x > start.x);
         Assert.Equal(start.x, afterUnindent.x);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void BeginGroup_and_EndGroup_wrap_items()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Group");
+        var start = ImGui.GetCursorPos();
+        ImGui.BeginGroup();
+        ImGui.Button("Grouped");
+        ImGui.EndGroup();
+        var after = ImGui.GetCursorPos();
+        Assert.Equal(start.x, after.x);
+        Assert.True(ImGui.GetItemRectSize().y > 0);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void BeginChild_advances_parent_cursor()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Parent");
+        var startY = ImGui.GetCursorPos().y;
+        ImGui.BeginChild("Child", new ImVec2(40, 30), false);
+        ImGui.Button("Inside");
+        ImGui.EndChild();
+        var afterY = ImGui.GetCursorPos().y;
+        Assert.True(afterY > startY);
+        var childSize = ImGui.GetItemRectSize();
+        Assert.InRange(childSize.x, 39.9f, 40.1f);
+        Assert.InRange(childSize.y, 29.9f, 30.1f);
         ImGui.End();
     }
 }
