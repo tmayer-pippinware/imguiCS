@@ -17,6 +17,10 @@ public sealed class ImGuiContext
     internal ImGuiWindow? CurrentWindow;
     public Stack<ImGuiID> IDStack = new();
     public ImGuiID LastItemID;
+    public ImGuiID ActiveId;
+    public ImGuiID HoveredId;
+    public int ActiveIdMouseButton;
+    public bool ActiveIdJustActivated;
     internal ImGuiNextWindowData NextWindowData;
 
     public ImGuiContext()

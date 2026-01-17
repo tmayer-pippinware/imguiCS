@@ -112,4 +112,20 @@ public class WidgetTests
         Assert.True(dl.IdxBuffer.Count >= idxBefore + 6);
         ImGui.End();
     }
+
+    [Fact]
+    public void Hover_and_active_state_track_last_item()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Hover");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        ImGui.Button("X");
+        Assert.True(ImGui.IsItemHovered());
+        Assert.True(ImGui.IsItemActive());
+        Assert.Equal(ImGui.GetItemID(), ImGui.GetCurrentContext()!.ActiveId);
+        ImGui.End();
+    }
 }

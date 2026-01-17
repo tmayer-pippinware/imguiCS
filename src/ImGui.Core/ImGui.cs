@@ -210,6 +210,12 @@ public static partial class ImGui
         return ImHash.Hash(label, ctx.IDStack.Peek());
     }
 
+    public static ImGuiID GetItemID()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        return ctx.LastItemID;
+    }
+
     public static ImDrawList GetWindowDrawList()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -357,6 +363,19 @@ public static partial class ImGui
         ref var io = ref ctx.IO;
         bool hovered = bbScreen.Contains(io.MousePos);
         bool pressed = hovered && io.MouseClicked[0];
+        if (hovered)
+            ctx.HoveredId = id;
+        if (pressed)
+        {
+            ctx.ActiveId = id;
+            ctx.ActiveIdMouseButton = 0;
+            ctx.ActiveIdJustActivated = true;
+        }
+        if (ctx.ActiveId == id && io.MouseReleased[0])
+        {
+            ctx.ActiveId = 0;
+            ctx.ActiveIdMouseButton = -1;
+        }
         uint col = GetColorU32(ImGuiCol_.ImGuiCol_Button);
         if (hovered && io.MouseDown[0])
             col = GetColorU32(ImGuiCol_.ImGuiCol_ButtonActive);
@@ -370,6 +389,34 @@ public static partial class ImGui
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, bb);
         return pressed;
+    }
+
+    public static bool IsItemHovered()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var bb = new ImRect(ToScreen(window, window.DC.LastItemRect.Min), ToScreen(window, window.DC.LastItemRect.Max));
+        return bb.Contains(ctx.IO.MousePos);
+    }
+
+    public static bool IsItemActive()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        return ctx.ActiveId != 0 && ctx.ActiveId == ctx.LastItemID;
+    }
+
+    public static ImVec2 GetItemRectMin()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return ToScreen(window, window.DC.LastItemRect.Min);
+    }
+
+    public static ImVec2 GetItemRectMax()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return ToScreen(window, window.DC.LastItemRect.Max);
     }
 
     public static uint GetColorU32(ImGuiCol_ idx)
