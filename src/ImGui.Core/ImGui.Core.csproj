@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ImGui</RootNamespace>
+    <AssemblyName>ImGui.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>
