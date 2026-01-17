@@ -57,7 +57,10 @@ public sealed class ImGuiSDL2Platform
         io.DeltaTime = CalculateDeltaTime();
 
         if (_nativeAvailable && _window != IntPtr.Zero)
+        {
             UpdateDisplaySizeFromNative();
+            UpdateFramebufferScaleFromNative(ref io);
+        }
     }
 
     public void ProcessEvent(ref SDL.SDL_Event ev)
@@ -128,6 +131,17 @@ public sealed class ImGuiSDL2Platform
             return;
         SDL.SDL_GetWindowSize(_window, out int w, out int h);
         UpdateDisplaySize(w, h);
+    }
+
+    private void UpdateFramebufferScaleFromNative(ref ImGuiIO io)
+    {
+        if (_window == IntPtr.Zero)
+            return;
+        SDL.SDL_GL_GetDrawableSize(_window, out int drawableW, out int drawableH);
+        if (io.DisplaySize.x > 0 && io.DisplaySize.y > 0 && drawableW > 0 && drawableH > 0)
+        {
+            io.DisplayFramebufferScale = new ImVec2(drawableW / io.DisplaySize.x, drawableH / io.DisplaySize.y);
+        }
     }
 
     private float CalculateDeltaTime()

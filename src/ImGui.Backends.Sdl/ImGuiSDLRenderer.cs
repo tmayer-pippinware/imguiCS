@@ -88,11 +88,19 @@ public sealed class ImGuiSDLRenderer
                 SDL.SDL_RenderSetClipRect(_renderer, ref clipRect);
 
                 int end = idxOffset + cmd.ElemCount;
-                for (int i = idxOffset; i + 2 < end && i + 2 < idx.Count; i += 3)
+                int baseIndex = idxOffset + (int)cmd.IdxOffset;
+                int baseVertex = (int)cmd.VtxOffset;
+                for (int i = baseIndex; i + 2 < end && i + 2 < idx.Count; i += 3)
                 {
-                    var v0 = verts[idx[i]];
-                    var v1 = verts[idx[i + 1]];
-                    var v2 = verts[idx[i + 2]];
+                    int i0 = baseVertex + idx[i];
+                    int i1 = baseVertex + idx[i + 1];
+                    int i2 = baseVertex + idx[i + 2];
+                    if ((uint)i2 >= (uint)verts.Count)
+                        continue;
+
+                    var v0 = OffsetVertex(verts[i0], drawData.DisplayPos);
+                    var v1 = OffsetVertex(verts[i1], drawData.DisplayPos);
+                    var v2 = OffsetVertex(verts[i2], drawData.DisplayPos);
 
                     if (_options.FillTriangles)
                         DrawFilledTriangle(v0, v1, v2);
@@ -113,7 +121,7 @@ public sealed class ImGuiSDLRenderer
             for (int t = 0; t < list.TextBuffer.Count; t++)
             {
                 var text = list.TextBuffer[t];
-                DrawTextFallback(text);
+                DrawTextFallback(text, drawData.DisplayPos);
             }
         }
 
@@ -131,7 +139,12 @@ public sealed class ImGuiSDLRenderer
 
     private static byte ColorChannel(uint packedColor, int shift) => (byte)((packedColor >> shift) & 0xFF);
 
-    private void DrawTextFallback(in ImDrawTextCommand cmd)
+    private static ImDrawVert OffsetVertex(in ImDrawVert v, ImVec2 displayPos)
+    {
+        return new ImDrawVert(new ImVec2(v.pos.x - displayPos.x, v.pos.y - displayPos.y), v.uv, v.col);
+    }
+
+    private void DrawTextFallback(in ImDrawTextCommand cmd, ImVec2 displayPos)
     {
         // Approximate text as a filled rectangle sized by character count.
         int width = Math.Max(1, (int)(cmd.Text.Length * 7));
@@ -143,8 +156,8 @@ public sealed class ImGuiSDLRenderer
         SDL.SDL_SetRenderDrawColor(_renderer, r, g, b, a);
         SDL.SDL_Rect rect = new()
         {
-            x = (int)cmd.Pos.x,
-            y = (int)cmd.Pos.y,
+            x = (int)(cmd.Pos.x - displayPos.x),
+            y = (int)(cmd.Pos.y - displayPos.y),
             w = width,
             h = height
         };

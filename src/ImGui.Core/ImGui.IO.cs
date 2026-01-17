@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace ImGui;
 
@@ -71,6 +72,10 @@ public struct ImGuiIO
     public object? BackendPlatformUserData;
     public object? BackendRendererUserData;
     public object? BackendLanguageUserData;
+    public Func<string>? GetClipboardTextFn;
+    public Action<string>? SetClipboardTextFn;
+    public IntPtr ImeWindowHandle;
+    public Action<int, int>? SetPlatformImeDataFn;
 
     // Input state
     public ImVec2 MousePos;
