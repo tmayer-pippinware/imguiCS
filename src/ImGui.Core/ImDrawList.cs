@@ -109,6 +109,25 @@ public sealed class ImDrawList
         AddRectFilled(p_min, p_max, col, rounding, flags);
     }
 
+    public void AddLine(ImVec2 p1, ImVec2 p2, uint col, float thickness = 1.0f)
+    {
+        // Simple axis-aligned rectangle approximation for the line.
+        AddDrawCmdIfNeeded();
+        var min = new ImVec2(Math.Min(p1.x, p2.x), Math.Min(p1.y, p2.y));
+        var max = new ImVec2(Math.Max(p1.x, p2.x), Math.Max(p1.y, p2.y));
+        if (Math.Abs(p1.x - p2.x) < 0.0001f)
+        {
+            min.x -= thickness * 0.5f;
+            max.x += thickness * 0.5f;
+        }
+        else if (Math.Abs(p1.y - p2.y) < 0.0001f)
+        {
+            min.y -= thickness * 0.5f;
+            max.y += thickness * 0.5f;
+        }
+        AddRectFilled(min, max, col);
+    }
+
     public void AddRectFilled(ImVec2 p_min, ImVec2 p_max, uint col, float rounding = 0.0f, ImDrawFlags_ flags = ImDrawFlags_.ImDrawFlags_None)
     {
         AddDrawCmdIfNeeded();

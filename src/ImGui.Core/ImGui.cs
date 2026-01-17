@@ -64,6 +64,8 @@ public static partial class ImGui
         ctx.FrameCount++;
         if (ctx.IO.DeltaTime <= 0f)
             ctx.IO.DeltaTime = 1f / 60f;
+        ctx.HoveredId = 0;
+        ctx.ActiveIdJustActivated = false;
         ctx.ProcessInputEvents();
         _drawData.Reset();
         ctx.ForegroundDrawList.Clear();
@@ -158,6 +160,8 @@ public static partial class ImGui
     public static bool Begin(string name)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        if (ctx.CurrentWindow != null)
+            ctx.WindowStack.Push(ctx.CurrentWindow);
         var window = ctx.Windows.Find(w => w.Name == name);
         if (window == null)
         {
@@ -188,7 +192,7 @@ public static partial class ImGui
             return;
         if (ctx.IDStack.Count > 1)
             ctx.IDStack.Pop();
-        ctx.CurrentWindow = null;
+        ctx.CurrentWindow = ctx.WindowStack.Count > 0 ? ctx.WindowStack.Pop() : null;
     }
 
     public static void PushID(string id)
@@ -417,6 +421,13 @@ public static partial class ImGui
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         return ToScreen(window, window.DC.LastItemRect.Max);
+    }
+
+    public static ImVec2 GetItemRectSize()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return window.DC.LastItemRect.Size;
     }
 
     public static uint GetColorU32(ImGuiCol_ idx)

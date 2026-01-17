@@ -128,4 +128,17 @@ public class WidgetTests
         Assert.Equal(ImGui.GetItemID(), ImGui.GetCurrentContext()!.ActiveId);
         ImGui.End();
     }
+
+    [Fact]
+    public void GetItemRectSize_matches_drawn_widget()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Size");
+        ImGui.Button("SizeBtn");
+        var size = ImGui.GetItemRectSize();
+        Assert.True(size.x > 0);
+        Assert.True(size.y > 0);
+        ImGui.End();
+    }
 }

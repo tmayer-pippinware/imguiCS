@@ -14,6 +14,7 @@ public sealed class ImGuiContext
     internal uint InputEventsNextEventId = 1;
     public readonly ImDrawList ForegroundDrawList = new();
     internal readonly List<ImGuiWindow> Windows = new();
+    internal readonly Stack<ImGuiWindow> WindowStack = new();
     internal ImGuiWindow? CurrentWindow;
     public Stack<ImGuiID> IDStack = new();
     public ImGuiID LastItemID;
