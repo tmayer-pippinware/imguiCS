@@ -49,6 +49,8 @@ internal sealed class ImGuiTable
     public ImVec2 WorkPos;
     public float RowHeight;
     public List<string?> ColumnNames { get; } = new();
+    public ImGuiTableSortSpecs SortSpecs;
+    public ImGuiTableColumnSortSpecs[] SortSpecsData = Array.Empty<ImGuiTableColumnSortSpecs>();
 
     public ImGuiTable(ImGuiID id, int columns, ImVec2 outerSize, ImVec2 workPos, float rowHeight)
     {
@@ -60,6 +62,7 @@ internal sealed class ImGuiTable
         WorkPos = workPos;
         RowHeight = rowHeight;
         ColumnNames.Capacity = columns;
+        SortSpecs = new ImGuiTableSortSpecs();
     }
 }
 

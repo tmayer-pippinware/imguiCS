@@ -643,6 +643,7 @@ public static partial class ImGui
         table.CurrentColumn = -1;
         float baseHeight = GetTextLineHeightWithSpacing();
         table.RowHeight = Math.Max(min_row_height > 0 ? min_row_height : baseHeight, baseHeight);
+        table.WorkPos = new ImVec2(table.WorkPos.x, table.WorkPos.y + table.RowHeight);
         return true;
     }
 
@@ -656,7 +657,7 @@ public static partial class ImGui
             return false;
         float columnWidth = table.ColumnsCount > 0 ? table.OuterSize.x / table.ColumnsCount : table.OuterSize.x;
         float x = table.WorkPos.x + columnWidth * table.CurrentColumn;
-        float y = table.WorkPos.y + table.RowHeight * Math.Max(0, table.CurrentRow);
+        float y = table.WorkPos.y;
         window.DC.CursorPos = new ImVec2(x, y);
         window.DC.CursorStartPos = new ImVec2(x, y);
         return true;
@@ -686,6 +687,60 @@ public static partial class ImGui
             table.ColumnNames[Math.Min(table.ColumnNames.Count - 1, table.ColumnsCount - 1)] = label;
     }
 
+    public static string? TableGetColumnName(int column_n)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call BeginTable() first.");
+        var table = ctx.CurrentTable ?? throw new InvalidOperationException("No current table. Call BeginTable() first.");
+        if ((uint)column_n >= table.ColumnNames.Count)
+            return null;
+        return table.ColumnNames[column_n];
+    }
+
+    public static ImGuiTableColumnFlags_ TableGetColumnFlags()
+    {
+        return ImGuiTableColumnFlags_.ImGuiTableColumnFlags_None;
+    }
+
+    public static void TableSetColumnIndex(int column_n)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var table = ctx.CurrentTable ?? throw new InvalidOperationException("No current table. Call BeginTable() first.");
+        table.CurrentColumn = column_n - 1;
+        TableNextColumn();
+    }
+
+    public static ImGuiTableColumnSortSpecs TableGetColumnSortSpecs(int column_n)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var table = ctx.CurrentTable ?? throw new InvalidOperationException("No current table. Call BeginTable() first.");
+        if ((uint)column_n >= table.ColumnsCount)
+            throw new ArgumentOutOfRangeException(nameof(column_n));
+        EnsureTableSortSpecs(table);
+        return table.SortSpecsData[column_n];
+    }
+
+    public static ImGuiTableSortSpecs TableGetSortSpecs()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call BeginTable() first.");
+        var table = ctx.CurrentTable ?? throw new InvalidOperationException("No current table. Call BeginTable() first.");
+        EnsureTableSortSpecs(table);
+        return table.SortSpecs;
+    }
+
+    private static void EnsureTableSortSpecs(ImGuiTable table)
+    {
+        if (table.SortSpecsData.Length == 0)
+        {
+            table.SortSpecsData = new ImGuiTableColumnSortSpecs[table.ColumnsCount];
+            for (int i = 0; i < table.ColumnsCount; i++)
+            {
+                table.SortSpecsData[i] = new ImGuiTableColumnSortSpecs { ColumnIndex = i, SortDirection = ImGuiSortDirection.ImGuiSortDirection_None };
+            }
+        }
+        table.SortSpecs.Specs = table.SortSpecsData;
+        table.SortSpecs.SpecsCount = table.SortSpecsData.Length;
+    }
+
     public static void TableHeadersRow()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -702,6 +757,14 @@ public static partial class ImGui
             var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
             window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, GetColorU32(ImGuiCol_.ImGuiCol_TableHeaderBg));
             window.DrawList.AddText(new ImVec2(bbScreen.Min.x + ctx.Style.CellPadding.x, bbScreen.Min.y + ctx.Style.CellPadding.y), GetColorU32(ImGuiCol_.ImGuiCol_Text), label);
+            var specs = TableGetColumnSortSpecs(col);
+            if (ctx.IO.MouseClicked[0])
+            {
+                specs.SortDirection = specs.SortDirection == ImGuiSortDirection.ImGuiSortDirection_Ascending
+                    ? ImGuiSortDirection.ImGuiSortDirection_Descending
+                    : ImGuiSortDirection.ImGuiSortDirection_Ascending;
+                table.SortSpecs!.SpecsDirty = true;
+            }
         }
     }
 

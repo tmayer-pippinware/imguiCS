@@ -81,4 +81,23 @@ public class TableTests
         Assert.Contains(drawList.TextBuffer, t => t.Text.Contains("Col1"));
         Assert.Contains(drawList.TextBuffer, t => t.Text.Contains("Col2"));
     }
+
+    [Fact]
+    public void Table_sort_specs_toggle_on_header_click()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("T");
+        ImGui.BeginTable("tbl", 2);
+        ImGui.TableSetupColumn("Col1");
+        ImGui.TableSetupColumn("Col2");
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        ImGui.TableHeadersRow();
+        var specs = ImGui.TableGetSortSpecs();
+        Assert.True(specs.SpecsDirty);
+        Assert.Equal(2, specs.SpecsCount);
+        ImGui.EndTable();
+        ImGui.End();
+    }
 }
