@@ -70,3 +70,11 @@ public struct ImVec4
         this.w = w;
     }
 }
+
+public enum ImGuiMouseSource : int
+{
+    ImGuiMouseSource_Mouse = 0,
+    ImGuiMouseSource_TouchScreen,
+    ImGuiMouseSource_Pen,
+    ImGuiMouseSource_COUNT
+}
