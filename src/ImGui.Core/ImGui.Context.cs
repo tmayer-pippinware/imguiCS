@@ -36,6 +36,8 @@ public sealed class ImGuiContext
     public ImGuiID NavInitResultId;
     public bool NavMoveRequest;
     internal ImGuiNextWindowData NextWindowData;
+    internal readonly HashSet<ImGuiID> OpenPopups = new();
+    internal readonly Stack<ImGuiID> PopupStack = new();
     internal readonly Dictionary<ImGuiID, ImGuiInputTextState> InputTextStates = new();
 
     public ImGuiContext()

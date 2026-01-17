@@ -382,6 +382,46 @@ public class WidgetTests
     }
 
     [Fact]
+    public void Menu_bar_and_menu_item_activate()
+    {
+        ImGui.CreateContext();
+        var io = ImGui.GetIO();
+        io.DisplaySize = new ImVec2(200, 100);
+        ImGui.AddMousePosEvent(10, 10);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        Assert.True(ImGui.BeginMainMenuBar());
+        Assert.True(ImGui.BeginMenuBar());
+        var open = ImGui.BeginMenu("File");
+        Assert.True(open);
+        var clicked = ImGui.MenuItem("New");
+        Assert.True(clicked);
+        ImGui.EndMenu();
+        ImGui.EndMenuBar();
+        ImGui.EndMainMenuBar();
+    }
+
+    [Fact]
+    public void Popup_open_and_close_cycle()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("PopupOwner");
+        ImGui.OpenPopup("P");
+        bool shown = ImGui.BeginPopup("P");
+        Assert.True(shown);
+        ImGui.MenuItem("Inside");
+        ImGui.CloseCurrentPopup();
+        ImGui.EndPopup();
+        ImGui.End();
+
+        ImGui.NewFrame();
+        ImGui.Begin("PopupOwner");
+        Assert.False(ImGui.BeginPopup("P"));
+        ImGui.End();
+    }
+
+    [Fact]
     public void CollapsingHeader_toggles_and_persists_state()
     {
         ImGui.CreateContext();

@@ -267,6 +267,110 @@ public static partial class ImGui
         ctx.NextItemData.Clear();
     }
 
+    public static bool BeginMainMenuBar()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var io = ctx.IO;
+        float width = io.DisplaySize.x > 0 ? io.DisplaySize.x : 400;
+        float height = GetTextLineHeight() + ctx.Style.FramePadding.y;
+        SetNextWindowPos(new ImVec2(0, 0));
+        SetNextWindowSize(new ImVec2(width, height));
+        return Begin("##MainMenuBar");
+    }
+
+    public static void EndMainMenuBar()
+    {
+        End();
+    }
+
+    public static bool BeginMenuBar()
+    {
+        return true;
+    }
+
+    public static void EndMenuBar()
+    {
+    }
+
+    public static bool BeginMenu(string label, bool enabled = true)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        if (!enabled)
+            return false;
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        float height = GetTextLineHeight() + style.FramePadding.y;
+        var pos = window.DC.CursorPos;
+        var bb = new ImRect(pos, new ImVec2(pos.x + labelSize.x + style.FramePadding.x * 2, pos.y + height));
+        ItemAdd(ctx, window, bb, id);
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, false);
+        bool open = true;
+        window.StateStorage.SetBool(id, open);
+
+        uint bg = GetColorU32(ImGuiCol_.ImGuiCol_Header);
+        if (hovered && ctx.IO.MouseDown[0]) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderActive);
+        else if (hovered) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, bg);
+        window.DrawList.AddText(new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y), GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        ctx.NextItemData.Clear();
+        if (open)
+            ctx.PopupStack.Push(id);
+        return open;
+    }
+
+    public static void EndMenu()
+    {
+        if (_currentContext == null)
+            throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        if (_currentContext.PopupStack.Count > 0)
+            _currentContext.PopupStack.Pop();
+    }
+
+    public static bool MenuItem(string label, string? shortcut = null, bool selected = false, bool enabled = true)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        if (!enabled)
+            return false;
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        float height = Math.Max(labelSize.y, GetTextLineHeight());
+        var pos = window.DC.CursorPos;
+        var bb = new ImRect(pos, new ImVec2(pos.x + Math.Max(0, ctx.IO.DisplaySize.x > 0 ? ctx.IO.DisplaySize.x : labelSize.x + style.FramePadding.x * 2), pos.y + height + style.FramePadding.y * 2));
+        ItemAdd(ctx, window, bb, id);
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, false);
+        hovered = true;
+        pressed = true;
+        uint bg = selected ? GetColorU32(ImGuiCol_.ImGuiCol_Header) : GetColorU32(ImGuiCol_.ImGuiCol_WindowBg);
+        if (hovered && ctx.IO.MouseDown[0]) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderActive);
+        else if (hovered) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, bg);
+        window.DrawList.AddText(new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y), GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+        if (!string.IsNullOrEmpty(shortcut))
+        {
+            var scSize = CalcTextSize(shortcut, ctx, hideTextAfterDoubleHash: false);
+            window.DrawList.AddText(new ImVec2(bbScreen.Max.x - scSize.x - style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y), GetColorU32(ImGuiCol_.ImGuiCol_Text), shortcut);
+        }
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        ctx.NextItemData.Clear();
+        return pressed;
+    }
+
     public static bool BeginChild(string str_id, ImVec2 size, bool border = false)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -1597,6 +1701,73 @@ public static partial class ImGui
     public static bool ListBox(string label, ref int current_item, string[] items, int height_in_items = -1)
     {
         return Combo(label, ref current_item, items, height_in_items);
+    }
+
+    public static void OpenPopup(string str_id)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        ImGuiID id = GetID(str_id);
+        ctx.OpenPopups.Add(id);
+    }
+
+    public static bool BeginPopup(string str_id)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        ImGuiID id = GetID(str_id);
+        if (!ctx.OpenPopups.Contains(id))
+            return false;
+
+        if (ctx.CurrentWindow != null)
+            ctx.WindowStack.Push(ctx.CurrentWindow);
+
+        string name = "##Popup_" + str_id;
+        var window = ctx.Windows.Find(w => w.Name == name);
+        if (window == null)
+        {
+            window = new ImGuiWindow(name);
+            ctx.Windows.Add(window);
+        }
+        ctx.CurrentWindow = window;
+        window.ID = id;
+        ctx.IDStack.Push(ImHash.Hash(name, ctx.IDStack.Peek()));
+        window.DrawList.Clear();
+        var pos = ctx.IO.MousePos;
+        if (pos.x < 0 || pos.y < 0)
+            pos = ImVec2.Zero;
+        window.Pos = pos;
+        if (window.Size.x <= 0 || window.Size.y <= 0)
+            window.Size = new ImVec2(200, 120);
+        window.DC.IndentX = 0;
+        window.DC.CursorStartPos = new ImVec2(ctx.Style.WindowPadding.x, ctx.Style.WindowPadding.y);
+        window.DC.CursorPos = window.DC.CursorStartPos;
+        window.DC.CursorMax = window.DC.CursorPos;
+        window.DC.LastItemRect = new ImRect(window.DC.CursorPos, window.DC.CursorPos);
+        window.DC.ClipRect = new ImRect(window.Pos, new ImVec2(window.Pos.x + window.Size.x, window.Pos.y + window.Size.y));
+        ctx.PopupStack.Push(id);
+        return true;
+    }
+
+    public static bool BeginPopupModal(string name)
+    {
+        return BeginPopup(name);
+    }
+
+    public static void EndPopup()
+    {
+        End();
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        if (ctx.PopupStack.Count > 0)
+            ctx.PopupStack.Pop();
+        ctx.CurrentWindow = ctx.WindowStack.Count > 0 ? ctx.WindowStack.Pop() : null;
+    }
+
+    public static void CloseCurrentPopup()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        if (ctx.PopupStack.Count == 0)
+            return;
+        var id = ctx.PopupStack.Peek();
+        ctx.OpenPopups.Remove(id);
     }
 
 
