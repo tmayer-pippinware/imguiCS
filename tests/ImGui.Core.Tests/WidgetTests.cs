@@ -422,6 +422,28 @@ public class WidgetTests
     }
 
     [Fact]
+    public void DragDrop_payload_delivered()
+    {
+        ImGui.CreateContext();
+        ImGui.AddMousePosEvent(5, 5);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        ImGui.Begin("DragDrop");
+        ImGui.Button("Source");
+        Assert.True(ImGui.BeginDragDropSource());
+        ImGui.SetDragDropPayload("TEXT", System.Text.Encoding.UTF8.GetBytes("hello"));
+        ImGui.EndDragDropSource();
+
+        ImGui.Button("Target");
+        Assert.True(ImGui.BeginDragDropTarget());
+        var payload = ImGui.AcceptDragDropPayload("TEXT");
+        ImGui.EndDragDropTarget();
+        ImGui.End();
+        Assert.NotNull(payload);
+        Assert.True(payload!.IsDelivery || payload.IsPreview);
+    }
+
+    [Fact]
     public void CollapsingHeader_toggles_and_persists_state()
     {
         ImGui.CreateContext();

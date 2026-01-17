@@ -100,6 +100,7 @@ internal struct ImGuiGroupData
     public ImVec2 GroupMax;
 }
 
+
 internal sealed class ImGuiInputTextState
 {
     public StbTextBuffer Buffer;

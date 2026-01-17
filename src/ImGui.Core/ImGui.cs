@@ -1703,6 +1703,57 @@ public static partial class ImGui
         return Combo(label, ref current_item, items, height_in_items);
     }
 
+    public static bool BeginDragDropSource(ImGuiDragDropFlags_ flags = ImGuiDragDropFlags_.ImGuiDragDropFlags_None)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        if (ctx.ActiveId == 0 && ctx.LastItemID == 0)
+            return false;
+        ctx.DragDropActive = true;
+        ctx.DragDropSourceId = ctx.LastItemID;
+        ctx.DragDropPayload.Clear();
+        return true;
+    }
+
+    public static void EndDragDropSource()
+    {
+    }
+
+    public static bool SetDragDropPayload(string type, byte[] data, ImGuiCond_ cond = ImGuiCond_.ImGuiCond_Always)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        ctx.DragDropPayload.DataType = type;
+        ctx.DragDropPayload.Data = data;
+        ctx.DragDropPayload.DataSize = data?.Length ?? 0;
+        ctx.DragDropPayload.IsDelivery = false;
+        ctx.DragDropPayload.IsPreview = false;
+        return true;
+    }
+
+    public static ImGuiPayload? AcceptDragDropPayload(string type, ImGuiDragDropFlags_ flags = ImGuiDragDropFlags_.ImGuiDragDropFlags_None)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        if (!ctx.DragDropActive || ctx.DragDropPayload.DataType != type)
+            return null;
+        ctx.DragDropPayload.IsPreview = true;
+        if (ctx.IO.MouseReleased[0])
+        {
+            ctx.DragDropPayload.IsDelivery = true;
+            ctx.DragDropTargetId = ctx.LastItemID;
+            ctx.DragDropActive = false;
+        }
+        return ctx.DragDropPayload;
+    }
+
+    public static bool BeginDragDropTarget()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        return ctx.DragDropActive;
+    }
+
+    public static void EndDragDropTarget()
+    {
+    }
+
     public static void OpenPopup(string str_id)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");

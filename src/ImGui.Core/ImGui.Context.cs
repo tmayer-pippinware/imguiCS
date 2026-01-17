@@ -39,6 +39,10 @@ public sealed class ImGuiContext
     internal readonly HashSet<ImGuiID> OpenPopups = new();
     internal readonly Stack<ImGuiID> PopupStack = new();
     internal readonly Dictionary<ImGuiID, ImGuiInputTextState> InputTextStates = new();
+    internal ImGuiPayload DragDropPayload = new();
+    internal ImGuiID DragDropSourceId;
+    internal ImGuiID DragDropTargetId;
+    internal bool DragDropActive;
 
     public ImGuiContext()
     {
