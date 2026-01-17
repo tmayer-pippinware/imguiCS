@@ -38,4 +38,16 @@ public class ImGuiContextTests
         Assert.NotNull(ctx);
         Assert.Equal(2, ctx!.FrameCount);
     }
+
+    [Fact]
+    public void Frame_count_and_time_progress()
+    {
+        ImGui.CreateContext();
+        double startTime = ImGui.GetTime();
+        int startFrame = ImGui.GetFrameCount();
+        ImGui.NewFrame();
+        ImGui.NewFrame();
+        Assert.True(ImGui.GetTime() > startTime);
+        Assert.True(ImGui.GetFrameCount() >= startFrame + 2);
+    }
 }

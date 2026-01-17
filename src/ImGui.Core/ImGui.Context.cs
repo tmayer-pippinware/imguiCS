@@ -22,6 +22,7 @@ public sealed class ImGuiContext
     public ImGuiID HoveredId;
     public int ActiveIdMouseButton;
     public bool ActiveIdJustActivated;
+    public double Time;
     internal ImGuiNextWindowData NextWindowData;
 
     public ImGuiContext()

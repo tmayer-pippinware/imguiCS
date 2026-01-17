@@ -44,6 +44,18 @@ public static partial class ImGui
         return ref ctx.Style;
     }
 
+    public static int GetFrameCount()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        return ctx.FrameCount;
+    }
+
+    public static double GetTime()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        return ctx.Time;
+    }
+
     public static void SetNextWindowPos(ImVec2 pos)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -64,6 +76,7 @@ public static partial class ImGui
         ctx.FrameCount++;
         if (ctx.IO.DeltaTime <= 0f)
             ctx.IO.DeltaTime = 1f / 60f;
+        ctx.Time += ctx.IO.DeltaTime;
         ctx.HoveredId = 0;
         ctx.ActiveIdJustActivated = false;
         ctx.ProcessInputEvents();
@@ -283,6 +296,30 @@ public static partial class ImGui
             Math.Max(0, contentSize.y - offset.y));
     }
 
+    public static ImVec2 GetMousePos()
+    {
+        ref var io = ref GetIO();
+        return io.MousePos;
+    }
+
+    public static bool IsMouseDown(int button)
+    {
+        ref var io = ref GetIO();
+        return (uint)button < io.MouseDown.Length && io.MouseDown[button];
+    }
+
+    public static bool IsMouseClicked(int button)
+    {
+        ref var io = ref GetIO();
+        return (uint)button < io.MouseClicked.Length && io.MouseClicked[button];
+    }
+
+    public static bool IsMouseReleased(int button)
+    {
+        ref var io = ref GetIO();
+        return (uint)button < io.MouseReleased.Length && io.MouseReleased[button];
+    }
+
     public static void SameLine(float offset_from_start_x = 0.0f, float spacing = -1.0f)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -395,6 +432,59 @@ public static partial class ImGui
         return pressed;
     }
 
+    public static bool Checkbox(string label, ref bool v)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        float squareSz = ctx.Style.FontSizeBase + style.FramePadding.y * 2;
+        var pos = window.DC.CursorPos;
+        var boxMin = pos;
+        var boxMax = new ImVec2(pos.x + squareSz, pos.y + squareSz);
+        var labelSize = CalcTextSize(label, ctx);
+        var textPos = new ImVec2(boxMax.x + style.ItemSpacing.x, pos.y + style.FramePadding.y);
+        var bb = new ImRect(pos, new ImVec2(textPos.x + labelSize.x, boxMax.y));
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+
+        ref var io = ref ctx.IO;
+        bool hovered = bbScreen.Contains(io.MousePos);
+        bool pressed = hovered && io.MouseClicked[0];
+        if (hovered)
+            ctx.HoveredId = id;
+        if (pressed)
+        {
+            ctx.ActiveId = id;
+            ctx.ActiveIdMouseButton = 0;
+            ctx.ActiveIdJustActivated = true;
+            v = !v;
+        }
+        if (ctx.ActiveId == id && io.MouseReleased[0])
+        {
+            ctx.ActiveId = 0;
+            ctx.ActiveIdMouseButton = -1;
+        }
+
+        uint boxCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBg);
+        if (hovered && io.MouseDown[0]) boxCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgActive);
+        else if (hovered) boxCol = GetColorU32(ImGuiCol_.ImGuiCol_FrameBgHovered);
+
+        window.DrawList.AddRectFilled(ToScreen(window, boxMin), ToScreen(window, boxMax), boxCol);
+        if (v)
+        {
+            var pad = 3.0f;
+            window.DrawList.AddRectFilled(
+                ToScreen(window, new ImVec2(boxMin.x + pad, boxMin.y + pad)),
+                ToScreen(window, new ImVec2(boxMax.x - pad, boxMax.y - pad)),
+                GetColorU32(ImGuiCol_.ImGuiCol_CheckMark));
+        }
+        window.DrawList.AddText(textPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), label);
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        return pressed;
+    }
+
     public static bool IsItemHovered()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -434,6 +524,18 @@ public static partial class ImGui
     {
         ref var style = ref GetStyle();
         return ColorConvertFloat4ToU32(style.Colors[(int)idx]);
+    }
+
+    public static float GetTextLineHeight()
+    {
+        ref var style = ref GetStyle();
+        return style.FontSizeBase + style.FramePadding.y * 2.0f;
+    }
+
+    public static float GetTextLineHeightWithSpacing()
+    {
+        ref var style = ref GetStyle();
+        return style.FontSizeBase + style.FramePadding.y * 2.0f + style.ItemSpacing.y;
     }
 
     private static uint ColorConvertFloat4ToU32(ImVec4 col)

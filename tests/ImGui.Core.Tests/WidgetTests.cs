@@ -141,4 +141,20 @@ public class WidgetTests
         Assert.True(size.y > 0);
         ImGui.End();
     }
+
+    [Fact]
+    public void Checkbox_toggles_value_on_click()
+    {
+        ImGui.CreateContext();
+        bool value = false;
+        ImGui.Begin("Check");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 2, pos.y + 2);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        var pressed = ImGui.Checkbox("Enable", ref value);
+        Assert.True(pressed);
+        Assert.True(value);
+        ImGui.End();
+    }
 }
