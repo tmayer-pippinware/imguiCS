@@ -26,13 +26,28 @@ public struct ImDrawCmd
     public uint IdxOffset;
 }
 
+public struct ImDrawTextCommand
+{
+    public ImVec2 Pos;
+    public uint Color;
+    public string Text;
+
+    public ImDrawTextCommand(ImVec2 pos, uint color, string text)
+    {
+        Pos = pos;
+        Color = color;
+        Text = text;
+    }
+}
+
 public sealed class ImDrawList
 {
     public ImDrawListFlags_ Flags { get; private set; }
     public List<ImDrawCmd> CmdBuffer { get; } = new();
     public List<ImDrawIdx> IdxBuffer { get; } = new();
     public List<ImDrawVert> VtxBuffer { get; } = new();
-    private ImVec4 _clipRect = new(float.MinValue, float.MinValue, float.MaxValue, float.MaxValue);
+    public List<ImDrawTextCommand> TextBuffer { get; } = new();
+    private ImVec4 _clipRect = new(0, 0, float.MaxValue, float.MaxValue);
     private ImTextureID _textureId = default;
 
     public ImDrawList(ImDrawListFlags_ flags = ImDrawListFlags_.ImDrawListFlags_None)
@@ -45,6 +60,7 @@ public sealed class ImDrawList
         CmdBuffer.Clear();
         IdxBuffer.Clear();
         VtxBuffer.Clear();
+        TextBuffer.Clear();
         _clipRect = new ImVec4(float.MinValue, float.MinValue, float.MaxValue, float.MaxValue);
         _textureId = default;
     }
@@ -113,5 +129,11 @@ public sealed class ImDrawList
         var cmd = CmdBuffer[lastIndex];
         cmd.ElemCount += 6;
         CmdBuffer[lastIndex] = cmd;
+    }
+
+    public void AddText(ImVec2 pos, uint col, string text)
+    {
+        AddDrawCmdIfNeeded();
+        TextBuffer.Add(new ImDrawTextCommand(pos, col, text));
     }
 }

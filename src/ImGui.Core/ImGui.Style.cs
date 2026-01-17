@@ -81,7 +81,7 @@ public struct ImGuiStyle
 
     public ImGuiStyle()
     {
-        FontSizeBase = 0.0f;
+        FontSizeBase = 13.0f;
         FontScaleMain = 1.0f;
         FontScaleDpi = 1.0f;
 
@@ -266,6 +266,145 @@ public struct ImGuiStyle
         colors[(int)ImGuiCol_.ImGuiCol_NavWindowingHighlight]  = new ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
         colors[(int)ImGuiCol_.ImGuiCol_NavWindowingDimBg]      = new ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
         colors[(int)ImGuiCol_.ImGuiCol_ModalWindowDimBg]       = new ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+    }
+
+    public static void StyleColorsClassic(ref ImGuiStyle dst)
+    {
+        var colors = dst.Colors;
+        colors[(int)ImGuiCol_.ImGuiCol_Text]                   = new ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TextDisabled]           = new ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_WindowBg]               = new ImVec4(0.00f, 0.00f, 0.00f, 0.85f);
+        colors[(int)ImGuiCol_.ImGuiCol_ChildBg]                = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PopupBg]                = new ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
+        colors[(int)ImGuiCol_.ImGuiCol_Border]                 = new ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
+        colors[(int)ImGuiCol_.ImGuiCol_BorderShadow]           = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_FrameBg]                = new ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
+        colors[(int)ImGuiCol_.ImGuiCol_FrameBgHovered]         = new ImVec4(0.47f, 0.47f, 0.69f, 0.40f);
+        colors[(int)ImGuiCol_.ImGuiCol_FrameBgActive]          = new ImVec4(0.42f, 0.41f, 0.64f, 0.69f);
+        colors[(int)ImGuiCol_.ImGuiCol_TitleBg]                = new ImVec4(0.27f, 0.27f, 0.54f, 0.83f);
+        colors[(int)ImGuiCol_.ImGuiCol_TitleBgActive]          = new ImVec4(0.32f, 0.32f, 0.63f, 0.87f);
+        colors[(int)ImGuiCol_.ImGuiCol_TitleBgCollapsed]       = new ImVec4(0.40f, 0.40f, 0.80f, 0.20f);
+        colors[(int)ImGuiCol_.ImGuiCol_MenuBarBg]              = new ImVec4(0.40f, 0.40f, 0.55f, 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarBg]            = new ImVec4(0.20f, 0.25f, 0.30f, 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarGrab]          = new ImVec4(0.40f, 0.40f, 0.80f, 0.30f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarGrabHovered]   = new ImVec4(0.40f, 0.40f, 0.80f, 0.40f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarGrabActive]    = new ImVec4(0.41f, 0.39f, 0.80f, 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_CheckMark]              = new ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
+        colors[(int)ImGuiCol_.ImGuiCol_SliderGrab]             = new ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+        colors[(int)ImGuiCol_.ImGuiCol_SliderGrabActive]       = new ImVec4(0.41f, 0.39f, 0.80f, 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_Button]                 = new ImVec4(0.35f, 0.40f, 0.61f, 0.62f);
+        colors[(int)ImGuiCol_.ImGuiCol_ButtonHovered]          = new ImVec4(0.40f, 0.48f, 0.71f, 0.79f);
+        colors[(int)ImGuiCol_.ImGuiCol_ButtonActive]           = new ImVec4(0.46f, 0.54f, 0.80f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_Header]                 = new ImVec4(0.40f, 0.40f, 0.90f, 0.45f);
+        colors[(int)ImGuiCol_.ImGuiCol_HeaderHovered]          = new ImVec4(0.45f, 0.45f, 0.90f, 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_HeaderActive]           = new ImVec4(0.53f, 0.53f, 0.87f, 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_Separator]              = new ImVec4(0.50f, 0.50f, 0.50f, 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_SeparatorHovered]       = new ImVec4(0.60f, 0.60f, 0.70f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_SeparatorActive]        = new ImVec4(0.70f, 0.70f, 0.90f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_ResizeGrip]             = new ImVec4(1.00f, 1.00f, 1.00f, 0.10f);
+        colors[(int)ImGuiCol_.ImGuiCol_ResizeGripHovered]      = new ImVec4(0.78f, 0.82f, 1.00f, 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_ResizeGripActive]       = new ImVec4(0.78f, 0.82f, 1.00f, 0.90f);
+        colors[(int)ImGuiCol_.ImGuiCol_InputTextCursor]        = colors[(int)ImGuiCol_.ImGuiCol_Text];
+        colors[(int)ImGuiCol_.ImGuiCol_TabHovered]             = colors[(int)ImGuiCol_.ImGuiCol_HeaderHovered];
+        colors[(int)ImGuiCol_.ImGuiCol_Tab]                    = Lerp(colors[(int)ImGuiCol_.ImGuiCol_Header], colors[(int)ImGuiCol_.ImGuiCol_TitleBgActive], 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabSelected]            = Lerp(colors[(int)ImGuiCol_.ImGuiCol_HeaderActive], colors[(int)ImGuiCol_.ImGuiCol_TitleBgActive], 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabSelectedOverline]    = colors[(int)ImGuiCol_.ImGuiCol_HeaderActive];
+        colors[(int)ImGuiCol_.ImGuiCol_TabDimmed]              = Lerp(colors[(int)ImGuiCol_.ImGuiCol_Tab], colors[(int)ImGuiCol_.ImGuiCol_TitleBg], 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabDimmedSelected]      = Lerp(colors[(int)ImGuiCol_.ImGuiCol_TabSelected], colors[(int)ImGuiCol_.ImGuiCol_TitleBg], 0.40f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabDimmedSelectedOverline] = new ImVec4(0.53f, 0.53f, 0.87f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotLines]              = new ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotLinesHovered]       = new ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotHistogram]          = new ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotHistogramHovered]   = new ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableHeaderBg]          = new ImVec4(0.27f, 0.27f, 0.38f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableBorderStrong]      = new ImVec4(0.31f, 0.31f, 0.45f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableBorderLight]       = new ImVec4(0.26f, 0.26f, 0.28f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableRowBg]             = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableRowBgAlt]          = new ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
+        colors[(int)ImGuiCol_.ImGuiCol_TextLink]               = colors[(int)ImGuiCol_.ImGuiCol_HeaderActive];
+        colors[(int)ImGuiCol_.ImGuiCol_TextSelectedBg]         = new ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
+        colors[(int)ImGuiCol_.ImGuiCol_TreeLines]              = colors[(int)ImGuiCol_.ImGuiCol_Border];
+        colors[(int)ImGuiCol_.ImGuiCol_DragDropTarget]         = new ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+        colors[(int)ImGuiCol_.ImGuiCol_DragDropTargetBg]       = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_UnsavedMarker]          = new ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_NavCursor]              = colors[(int)ImGuiCol_.ImGuiCol_HeaderHovered];
+        colors[(int)ImGuiCol_.ImGuiCol_NavWindowingHighlight]  = new ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+        colors[(int)ImGuiCol_.ImGuiCol_NavWindowingDimBg]      = new ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+        colors[(int)ImGuiCol_.ImGuiCol_ModalWindowDimBg]       = new ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+    }
+
+    public static void StyleColorsLight(ref ImGuiStyle dst)
+    {
+        var colors = dst.Colors;
+        colors[(int)ImGuiCol_.ImGuiCol_Text]                   = new ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TextDisabled]           = new ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_WindowBg]               = new ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_ChildBg]                = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PopupBg]                = new ImVec4(1.00f, 1.00f, 1.00f, 0.98f);
+        colors[(int)ImGuiCol_.ImGuiCol_Border]                 = new ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
+        colors[(int)ImGuiCol_.ImGuiCol_BorderShadow]           = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_FrameBg]                = new ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_FrameBgHovered]         = new ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+        colors[(int)ImGuiCol_.ImGuiCol_FrameBgActive]          = new ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+        colors[(int)ImGuiCol_.ImGuiCol_TitleBg]                = new ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TitleBgActive]          = new ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TitleBgCollapsed]       = new ImVec4(1.00f, 1.00f, 1.00f, 0.51f);
+        colors[(int)ImGuiCol_.ImGuiCol_MenuBarBg]              = new ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarBg]            = new ImVec4(0.98f, 0.98f, 0.98f, 0.53f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarGrab]          = new ImVec4(0.69f, 0.69f, 0.69f, 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarGrabHovered]   = new ImVec4(0.49f, 0.49f, 0.49f, 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_ScrollbarGrabActive]    = new ImVec4(0.49f, 0.49f, 0.49f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_CheckMark]              = new ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_SliderGrab]             = new ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
+        colors[(int)ImGuiCol_.ImGuiCol_SliderGrabActive]       = new ImVec4(0.46f, 0.54f, 0.80f, 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_Button]                 = new ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+        colors[(int)ImGuiCol_.ImGuiCol_ButtonHovered]          = new ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_ButtonActive]           = new ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_Header]                 = new ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
+        colors[(int)ImGuiCol_.ImGuiCol_HeaderHovered]          = new ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_HeaderActive]           = new ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_Separator]              = new ImVec4(0.39f, 0.39f, 0.39f, 0.62f);
+        colors[(int)ImGuiCol_.ImGuiCol_SeparatorHovered]       = new ImVec4(0.14f, 0.44f, 0.80f, 0.78f);
+        colors[(int)ImGuiCol_.ImGuiCol_SeparatorActive]        = new ImVec4(0.14f, 0.44f, 0.80f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_ResizeGrip]             = new ImVec4(0.35f, 0.35f, 0.35f, 0.17f);
+        colors[(int)ImGuiCol_.ImGuiCol_ResizeGripHovered]      = new ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+        colors[(int)ImGuiCol_.ImGuiCol_ResizeGripActive]       = new ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+        colors[(int)ImGuiCol_.ImGuiCol_InputTextCursor]        = colors[(int)ImGuiCol_.ImGuiCol_Text];
+        colors[(int)ImGuiCol_.ImGuiCol_TabHovered]             = colors[(int)ImGuiCol_.ImGuiCol_HeaderHovered];
+        colors[(int)ImGuiCol_.ImGuiCol_Tab]                    = Lerp(colors[(int)ImGuiCol_.ImGuiCol_Header], colors[(int)ImGuiCol_.ImGuiCol_TitleBgActive], 0.90f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabSelected]            = Lerp(colors[(int)ImGuiCol_.ImGuiCol_HeaderActive], colors[(int)ImGuiCol_.ImGuiCol_TitleBgActive], 0.60f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabSelectedOverline]    = colors[(int)ImGuiCol_.ImGuiCol_HeaderActive];
+        colors[(int)ImGuiCol_.ImGuiCol_TabDimmed]              = Lerp(colors[(int)ImGuiCol_.ImGuiCol_Tab], colors[(int)ImGuiCol_.ImGuiCol_TitleBg], 0.80f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabDimmedSelected]      = Lerp(colors[(int)ImGuiCol_.ImGuiCol_TabSelected], colors[(int)ImGuiCol_.ImGuiCol_TitleBg], 0.40f);
+        colors[(int)ImGuiCol_.ImGuiCol_TabDimmedSelectedOverline] = new ImVec4(0.26f, 0.59f, 1.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotLines]              = new ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotLinesHovered]       = new ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotHistogram]          = new ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_PlotHistogramHovered]   = new ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableHeaderBg]          = new ImVec4(0.78f, 0.87f, 0.98f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableBorderStrong]      = new ImVec4(0.57f, 0.57f, 0.64f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableBorderLight]       = new ImVec4(0.68f, 0.68f, 0.74f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableRowBg]             = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_TableRowBgAlt]          = new ImVec4(0.30f, 0.30f, 0.30f, 0.09f);
+        colors[(int)ImGuiCol_.ImGuiCol_TextLink]               = colors[(int)ImGuiCol_.ImGuiCol_HeaderActive];
+        colors[(int)ImGuiCol_.ImGuiCol_TextSelectedBg]         = new ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+        colors[(int)ImGuiCol_.ImGuiCol_TreeLines]              = colors[(int)ImGuiCol_.ImGuiCol_Border];
+        colors[(int)ImGuiCol_.ImGuiCol_DragDropTarget]         = new ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+        colors[(int)ImGuiCol_.ImGuiCol_DragDropTargetBg]       = new ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_UnsavedMarker]          = new ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+        colors[(int)ImGuiCol_.ImGuiCol_NavCursor]              = colors[(int)ImGuiCol_.ImGuiCol_HeaderHovered];
+        colors[(int)ImGuiCol_.ImGuiCol_NavWindowingHighlight]  = new ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
+        colors[(int)ImGuiCol_.ImGuiCol_NavWindowingDimBg]      = new ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
+        colors[(int)ImGuiCol_.ImGuiCol_ModalWindowDimBg]       = new ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+    }
+
+    private static ImVec4 Lerp(ImVec4 a, ImVec4 b, float t)
+    {
+        return new ImVec4(
+            a.x + (b.x - a.x) * t,
+            a.y + (b.y - a.y) * t,
+            a.z + (b.z - a.z) * t,
+            a.w + (b.w - a.w) * t);
     }
 
     private static float ImTrunc(float v) => (float)Math.Floor(v);

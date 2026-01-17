@@ -78,6 +78,8 @@ public struct ImGuiIO
     public ImGuiMouseSource MouseSource;
     public float[] MouseDownDuration;
     public float[] MouseDownDurationPrev;
+    public bool[] MouseClicked;
+    public bool[] MouseReleased;
     public ImGuiKeyData[] KeysData;
     public bool AppAcceptingEvents;
     public ushort InputQueueSurrogate;
@@ -118,6 +120,7 @@ public struct ImGuiIO
         IniSavingRate = 5.0f;
         IniFilename = "imgui.ini";
         LogFilename = "imgui_log.txt";
+        FontGlobalScale = 1.0f;
         DisplayFramebufferScale = new ImVec2(1.0f, 1.0f);
 
         ConfigNavSwapGamepadButtons = false;
@@ -162,6 +165,8 @@ public struct ImGuiIO
         int mouseCount = (int)ImGuiMouseButton_.ImGuiMouseButton_COUNT;
         MouseDownDuration = CreateAndFill(mouseCount, -1.0f);
         MouseDownDurationPrev = CreateAndFill(mouseCount, -1.0f);
+        MouseClicked = new bool[mouseCount];
+        MouseReleased = new bool[mouseCount];
         MouseDown = new bool[mouseCount];
 
         int keyCount = (int)ImGuiKey.ImGuiKey_NamedKey_COUNT;
@@ -354,6 +359,8 @@ public struct ImGuiIO
             MouseDown[i] = false;
             MouseDownDuration[i] = -1.0f;
             MouseDownDurationPrev[i] = -1.0f;
+            MouseClicked[i] = false;
+            MouseReleased[i] = false;
         }
         MouseWheel = 0;
         MouseWheelH = 0;

@@ -13,6 +13,10 @@ public sealed class ImGuiContext
     public readonly List<ImGuiInputEvent> InputEventsQueue = new();
     internal uint InputEventsNextEventId = 1;
     public readonly ImDrawList ForegroundDrawList = new();
+    internal readonly List<ImGuiWindow> Windows = new();
+    internal ImGuiWindow? CurrentWindow;
+    public Stack<ImGuiID> IDStack = new();
+    public ImGuiID LastItemID;
 
     public ImGuiContext()
     {
@@ -20,6 +24,7 @@ public sealed class ImGuiContext
         IO.Context = this;
         Style = new ImGuiStyle();
         FrameCount = 0;
+        IDStack.Push(0);
     }
 
     internal void EnqueueInputEvent(in ImGuiInputEvent evt)
@@ -89,8 +94,14 @@ public sealed class ImGuiContext
 
         for (int i = 0; i < io.MouseDown.Length; i++)
         {
+            io.MouseClicked[i] = false;
+            io.MouseReleased[i] = false;
             io.MouseDownDurationPrev[i] = io.MouseDownDuration[i];
             io.MouseDownDuration[i] = io.MouseDown[i] ? (io.MouseDownDuration[i] < 0 ? 0 : io.MouseDownDuration[i] + dt) : -1.0f;
+            if (io.MouseDown[i] && io.MouseDownDuration[i] == 0)
+                io.MouseClicked[i] = true;
+            if (!io.MouseDown[i] && io.MouseDownDurationPrev[i] >= 0)
+                io.MouseReleased[i] = true;
         }
 
         io.Framerate = dt > 0 ? 1.0f / dt : 0;

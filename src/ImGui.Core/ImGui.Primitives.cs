@@ -77,6 +77,22 @@ public struct ImVec4
     public override int GetHashCode() => HashCode.Combine(x, y, z, w);
 }
 
+public struct ImRect
+{
+    public ImVec2 Min;
+    public ImVec2 Max;
+
+    public ImRect(ImVec2 min, ImVec2 max)
+    {
+        Min = min;
+        Max = max;
+    }
+
+    public ImVec2 Size => new(Max.x - Min.x, Max.y - Min.y);
+
+    public bool Contains(ImVec2 p) => p.x >= Min.x && p.y >= Min.y && p.x <= Max.x && p.y <= Max.y;
+}
+
 public enum ImGuiMouseSource : int
 {
     ImGuiMouseSource_Mouse = 0,

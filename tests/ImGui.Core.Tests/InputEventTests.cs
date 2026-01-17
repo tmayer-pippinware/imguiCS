@@ -32,10 +32,12 @@ public class InputEventTests
         // high surrogate followed by low surrogate (unicode smiley U+1F60A)
         io.AddInputCharacterUTF16(0xD83D);
         io.AddInputCharacterUTF16(0xDE0A);
+        ImGui.NewFrame();
 
         var ctx = ImGui.GetCurrentContext()!;
-        Assert.Single(ctx.InputEventsQueue);
-        Assert.Equal(0x1F60Au, ctx.InputEventsQueue[0].Text.Char);
+        Assert.Empty(ctx.InputEventsQueue);
+        Assert.Single(io.InputQueueCharacters);
+        Assert.Equal(0x1F60Au, io.InputQueueCharacters[0]);
     }
 
     [Fact]

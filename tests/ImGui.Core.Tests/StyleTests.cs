@@ -15,4 +15,13 @@ public class StyleTests
         Assert.Equal(28.0f, style.ScrollbarSize);
         Assert.Equal(10.0f, style.TabRounding);
     }
+
+    [Fact]
+    public void StyleColorsLight_sets_expected_palette()
+    {
+        var style = new ImGuiStyle();
+        ImGuiStyle.StyleColorsLight(ref style);
+        Assert.Equal(new ImVec4(0.94f, 0.94f, 0.94f, 1.00f), style.Colors[(int)ImGuiCol_.ImGuiCol_WindowBg]);
+        Assert.Equal(new ImVec4(0.26f, 0.59f, 0.98f, 0.40f), style.Colors[(int)ImGuiCol_.ImGuiCol_Button]);
+    }
 }
