@@ -307,6 +307,19 @@ public class WidgetTests
     }
 
     [Fact]
+    public void PushPopClipRect_changes_clipping()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Clip");
+        var dl = ImGui.GetWindowDrawList();
+        int before = dl.CmdBuffer.Count;
+        ImGui.PushClipRect(new ImVec2(0, 0), new ImVec2(10, 10));
+        ImGui.PopClipRect();
+        Assert.True(dl.CmdBuffer.Count > before);
+        ImGui.End();
+    }
+
+    [Fact]
     public void TextDisabled_uses_disabled_color()
     {
         ImGui.CreateContext();

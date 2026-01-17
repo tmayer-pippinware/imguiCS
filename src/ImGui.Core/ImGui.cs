@@ -2177,6 +2177,23 @@ public static partial class ImGui
         return new ImVec2(window.Pos.x + local.x, window.Pos.y + local.y);
     }
 
+    public static void PushClipRect(ImVec2 min, ImVec2 max)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var clip = new ImRect(ToScreen(window, min), ToScreen(window, max));
+        window.DC.ClipRect = clip;
+        window.DrawList.PushClipRect(new ImVec4(clip.Min.x, clip.Min.y, clip.Max.x, clip.Max.y));
+    }
+
+    public static void PopClipRect()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        window.DrawList.PopClipRect();
+        window.DC.ClipRect = new ImRect(window.Pos, new ImVec2(window.Pos.x + window.Size.x, window.Pos.y + window.Size.y));
+    }
+
     private static void RenderTextClipped(ImGuiWindow window, ImVec2 posMin, ImVec2 posMax, string text, ImVec2 textSize, ImVec2? align = null)
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -2188,6 +2205,35 @@ public static partial class ImGui
         var offset = new ImVec2(alignment.x * Math.Max(0, avail.x - textSize.x), alignment.y * Math.Max(0, avail.y - textSize.y));
         var pos = new ImVec2(posMin.x + offset.x, posMin.y + offset.y);
         window.DrawList.AddText(ToScreen(window, pos), GetColorU32(ImGuiCol_.ImGuiCol_Text), display);
+    }
+
+    public static void RenderFrame(ImVec2 p_min, ImVec2 p_max, uint fill_col)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        window.DrawList.AddRectFilled(ToScreen(window, p_min), ToScreen(window, p_max), fill_col);
+    }
+
+    public static void RenderArrow(ImVec2 pos, ImGuiDir dir, float size, uint col)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        string glyph = dir switch
+        {
+            ImGuiDir.ImGuiDir_Left => "<",
+            ImGuiDir.ImGuiDir_Right => ">",
+            ImGuiDir.ImGuiDir_Up => "^",
+            _ => "v"
+        };
+        window.DrawList.AddText(ToScreen(window, pos), col, glyph);
+    }
+
+    public static void RenderNavHighlight(ImRect bb, uint col)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        window.DrawList.AddRect(bbScreen.Min, bbScreen.Max, col);
     }
 
     private static float GetEffectiveItemWidth(ImGuiContext ctx, float defaultWidth)

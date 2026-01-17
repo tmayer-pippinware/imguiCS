@@ -47,6 +47,7 @@ public sealed class ImDrawList
     public List<ImDrawIdx> IdxBuffer { get; } = new();
     public List<ImDrawVert> VtxBuffer { get; } = new();
     public List<ImDrawTextCommand> TextBuffer { get; } = new();
+    private readonly Stack<ImVec4> _clipStack = new();
     private ImVec4 _clipRect = new(0, 0, float.MaxValue, float.MaxValue);
     private ImTextureID _textureId = default;
 
@@ -61,13 +62,24 @@ public sealed class ImDrawList
         IdxBuffer.Clear();
         VtxBuffer.Clear();
         TextBuffer.Clear();
+        _clipStack.Clear();
         _clipRect = new ImVec4(float.MinValue, float.MinValue, float.MaxValue, float.MaxValue);
         _textureId = default;
     }
 
     public void PushClipRect(ImVec4 clipRect)
     {
+        _clipStack.Push(_clipRect);
         _clipRect = clipRect;
+        AddDrawCmdIfNeeded();
+    }
+
+    public void PopClipRect()
+    {
+        if (_clipStack.Count == 0)
+            return;
+        _clipRect = _clipStack.Pop();
+        AddDrawCmdIfNeeded();
     }
 
     public void PushTextureID(ImTextureID textureId)
@@ -106,7 +118,24 @@ public sealed class ImDrawList
 
     public void AddRect(ImVec2 p_min, ImVec2 p_max, uint col, float rounding = 0.0f, ImDrawFlags_ flags = ImDrawFlags_.ImDrawFlags_None, float thickness = 1.0f)
     {
-        AddRectFilled(p_min, p_max, col, rounding, flags);
+        AddDrawCmdIfNeeded();
+        int vtxOffset = VtxBuffer.Count;
+        VtxBuffer.Add(new ImDrawVert(new ImVec2(p_min.x, p_min.y), ImVec2.Zero, col));
+        VtxBuffer.Add(new ImDrawVert(new ImVec2(p_max.x, p_min.y), ImVec2.Zero, col));
+        VtxBuffer.Add(new ImDrawVert(new ImVec2(p_max.x, p_max.y), ImVec2.Zero, col));
+        VtxBuffer.Add(new ImDrawVert(new ImVec2(p_min.x, p_max.y), ImVec2.Zero, col));
+
+        IdxBuffer.Add((ushort)(vtxOffset + 0));
+        IdxBuffer.Add((ushort)(vtxOffset + 1));
+        IdxBuffer.Add((ushort)(vtxOffset + 2));
+        IdxBuffer.Add((ushort)(vtxOffset + 2));
+        IdxBuffer.Add((ushort)(vtxOffset + 3));
+        IdxBuffer.Add((ushort)(vtxOffset + 0));
+
+        var lastIndex = CmdBuffer.Count - 1;
+        var cmd = CmdBuffer[lastIndex];
+        cmd.ElemCount += 6;
+        CmdBuffer[lastIndex] = cmd;
     }
 
     public void AddLine(ImVec2 p1, ImVec2 p2, uint col, float thickness = 1.0f)
