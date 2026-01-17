@@ -67,11 +67,21 @@ public static partial class ImGui
         _drawData.DisplayPos = new ImVec2(0, 0);
         _drawData.DisplaySize = ctx.IO.DisplaySize;
         _drawData.FramebufferScale = ctx.IO.DisplayFramebufferScale;
+        _drawData.CmdLists.Clear();
+        _drawData.CmdLists.Add(ctx.ForegroundDrawList);
+        _drawData.TotalVtxCount = ctx.ForegroundDrawList.VtxBuffer.Count;
+        _drawData.TotalIdxCount = ctx.ForegroundDrawList.IdxBuffer.Count;
     }
 
     public static ImDrawData GetDrawData()
     {
         return _drawData;
+    }
+
+    public static ImDrawList GetForegroundDrawList()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        return ctx.ForegroundDrawList;
     }
 
     public static void AddInputCharacter(uint c)

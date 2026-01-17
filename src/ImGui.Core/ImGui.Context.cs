@@ -12,6 +12,7 @@ public sealed class ImGuiContext
     public int FrameCount;
     public readonly List<ImGuiInputEvent> InputEventsQueue = new();
     internal uint InputEventsNextEventId = 1;
+    public readonly ImDrawList ForegroundDrawList = new();
 
     public ImGuiContext()
     {

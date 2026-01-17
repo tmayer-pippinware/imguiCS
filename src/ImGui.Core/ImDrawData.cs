@@ -10,7 +10,7 @@ public sealed class ImDrawData
     public ImVec2 FramebufferScale { get; internal set; }
     public int TotalVtxCount { get; internal set; }
     public int TotalIdxCount { get; internal set; }
-    public List<object> CmdLists { get; } = new(); // Placeholder until draw list is ported.
+    public List<ImDrawList> CmdLists { get; } = new();
 
     internal void Reset()
     {

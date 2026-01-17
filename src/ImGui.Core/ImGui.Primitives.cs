@@ -48,6 +48,9 @@ public struct ImVec2
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ImVec2 operator *(ImVec2 a, float b) => new(a.x * b, a.y * b);
+
+    public override bool Equals(object? obj) => obj is ImVec2 v && v.x.Equals(x) && v.y.Equals(y);
+    public override int GetHashCode() => HashCode.Combine(x, y);
 }
 
 /// <summary>
@@ -69,6 +72,9 @@ public struct ImVec4
         this.z = z;
         this.w = w;
     }
+
+    public override bool Equals(object? obj) => obj is ImVec4 v && v.x.Equals(x) && v.y.Equals(y) && v.z.Equals(z) && v.w.Equals(w);
+    public override int GetHashCode() => HashCode.Combine(x, y, z, w);
 }
 
 public enum ImGuiMouseSource : int
