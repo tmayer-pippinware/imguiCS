@@ -1,3 +1,30 @@
-docs/
+# Build
 bin/
 obj/
+
+# VS
+.vs/
+
+# Rider
+.idea/
+
+# User files
+*.user
+*.userprefs
+
+# Logs
+*.log
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Coverage
+coverage*.json
+TestResult*/
+
+# Auto-generated
+*.generated.cs
+bin/
+obj/
+docs/

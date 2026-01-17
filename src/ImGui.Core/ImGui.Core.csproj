@@ -3,6 +3,12 @@
   <PropertyGroup>
     <RootNamespace>ImGui</RootNamespace>
     <AssemblyName>ImGui.Core</AssemblyName>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StbRectPackSharp" Version="1.0.4" />
+    <PackageReference Include="StbTrueTypeSharp" Version="1.26.12" />
+  </ItemGroup>
 
 </Project>
