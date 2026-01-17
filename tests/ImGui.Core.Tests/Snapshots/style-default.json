@@ -1,0 +1,16 @@
+{
+  "Alpha": 1,
+  "DisabledAlpha": 0.6,
+  "WindowPadding": [8, 8],
+  "FramePadding": [4, 3],
+  "ItemSpacing": [8, 4],
+  "ItemInnerSpacing": [4, 4],
+  "CellPadding": [4, 2],
+  "IndentSpacing": 21,
+  "ScrollbarSize": 14,
+  "ScrollbarRounding": 9,
+  "GrabMinSize": 12,
+  "GrabRounding": 0,
+  "WindowMinSize": [32, 32],
+  "FontSizeBase": 13
+}

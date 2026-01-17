@@ -26,4 +26,8 @@
     <ProjectReference Include="..\..\src\ImGui.Core\ImGui.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Snapshots\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

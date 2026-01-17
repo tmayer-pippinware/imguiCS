@@ -1466,6 +1466,7 @@ public static partial class ImGui
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         var visibleLabel = GetLabelText(label);
+        v = Math.Clamp(v, v_min, v_max);
         ImGuiID id = GetID(label);
         var style = ctx.Style;
         var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
@@ -2277,6 +2278,9 @@ public static partial class ImGui
                     pressed = true;
             }
         }
+
+        if (repeat && held && !disabled)
+            pressed = true;
 
         return pressed;
     }

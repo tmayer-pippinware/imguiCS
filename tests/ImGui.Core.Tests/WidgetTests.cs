@@ -206,6 +206,52 @@ public class WidgetTests
     }
 
     [Fact]
+    public void Button_repeat_triggers_on_hold()
+    {
+        ImGui.CreateContext();
+        ImGui.GetIO().DeltaTime = 0.3f;
+        ImGui.Begin("Repeat");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        Assert.True(ImGui.Button("Repeat", repeat: true));
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        Assert.True(ImGui.Button("Repeat", repeat: true));
+        ImGui.End();
+    }
+
+    [Fact]
+    public void Checkbox_disabled_does_not_toggle()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Disabled");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        bool val = false;
+        ImGui.BeginDisabled();
+        var pressed = ImGui.Checkbox("Check", ref val);
+        ImGui.EndDisabled();
+        Assert.False(pressed);
+        Assert.False(val);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void SliderFloat_clamps_to_range()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Slider");
+        float v = 2.0f;
+        ImGui.SliderFloat("S", ref v, 0.0f, 1.0f);
+        Assert.InRange(v, 0.0f, 1.0f);
+        ImGui.End();
+    }
+
+    [Fact]
     public void Separator_adds_draw_command()
     {
         ImGui.CreateContext();
