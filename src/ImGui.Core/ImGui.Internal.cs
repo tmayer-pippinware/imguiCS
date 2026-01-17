@@ -10,6 +10,9 @@ internal sealed class ImGuiWindow
     public string Name { get; }
     public ImDrawList DrawList { get; } = new ImDrawList();
     public ImGuiWindowTempData DC { get; } = new ImGuiWindowTempData();
+    public ImVec2 Pos;
+    public ImVec2 Size;
+    public ImGuiID ID;
 
     public ImGuiWindow(string name)
     {
@@ -26,6 +29,22 @@ internal sealed class ImGuiWindowTempData
     public ImVec2 CursorStartPos;
     public ImGuiID LastItemId;
     public ImRect LastItemRect;
+}
+
+internal struct ImGuiNextWindowData
+{
+    public bool HasPos;
+    public bool HasSize;
+    public ImVec2 Pos;
+    public ImVec2 Size;
+
+    public void Clear()
+    {
+        HasPos = false;
+        HasSize = false;
+        Pos = ImVec2.Zero;
+        Size = ImVec2.Zero;
+    }
 }
 
 internal static class ImHash

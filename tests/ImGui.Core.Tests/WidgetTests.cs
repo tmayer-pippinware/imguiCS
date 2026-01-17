@@ -10,7 +10,8 @@ public class WidgetTests
     {
         ImGui.CreateContext();
         ImGui.Begin("Test");
-        ImGui.AddMousePosEvent(5, 5);
+        var cursor = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(cursor.x + 1, cursor.y + 1);
         ImGui.AddMouseButtonEvent(0, true);
         ImGui.NewFrame();
         var pressed = ImGui.Button("Btn");
@@ -62,9 +63,53 @@ public class WidgetTests
 
         var dl = ImGui.GetDrawData().CmdLists[0];
         Assert.True(dl.VtxBuffer.Count >= 8);
-        Assert.Equal(0f, dl.VtxBuffer[0].pos.x);
-        Assert.Equal(0f, dl.VtxBuffer[0].pos.y);
-        Assert.Equal(108f, dl.VtxBuffer[4].pos.x);
-        Assert.Equal(0f, dl.VtxBuffer[4].pos.y);
+        var firstMin = dl.VtxBuffer[0].pos;
+        var firstMax = dl.VtxBuffer[2].pos;
+        var secondMin = dl.VtxBuffer[4].pos;
+        var style = ImGui.GetStyle();
+        Assert.Equal(firstMin.y, secondMin.y);
+        Assert.InRange(secondMin.x, firstMax.x + style.ItemSpacing.x - 0.01f, firstMax.x + style.ItemSpacing.x + 0.01f);
+    }
+
+    [Fact]
+    public void NextWindow_pos_and_size_apply_once()
+    {
+        ImGui.CreateContext();
+        ImGui.SetNextWindowPos(new ImVec2(100, 50));
+        ImGui.SetNextWindowSize(new ImVec2(300, 200));
+        ImGui.Begin("Layout");
+        Assert.Equal(new ImVec2(100, 50), ImGui.GetWindowPos());
+        Assert.Equal(new ImVec2(300, 200), ImGui.GetWindowSize());
+        ImGui.End();
+    }
+
+    [Fact]
+    public void Cursor_and_content_region_respect_padding_and_advances()
+    {
+        ImGui.CreateContext();
+        var style = ImGui.GetStyle();
+        ImGui.SetNextWindowPos(new ImVec2(10, 20));
+        ImGui.SetNextWindowSize(new ImVec2(120, 80));
+        ImGui.Begin("Cursor");
+        var screenPos = ImGui.GetCursorScreenPos();
+        Assert.Equal(new ImVec2(10 + style.WindowPadding.x, 20 + style.WindowPadding.y), screenPos);
+        var avail = ImGui.GetContentRegionAvail();
+        ImGui.Dummy(new ImVec2(10, 10));
+        var availAfter = ImGui.GetContentRegionAvail();
+        Assert.Equal(avail.x, availAfter.x);
+        Assert.True(availAfter.y < avail.y);
+        ImGui.End();
+    }
+
+    [Fact]
+    public void Separator_adds_draw_command()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Lines");
+        var dl = ImGui.GetWindowDrawList();
+        int idxBefore = dl.IdxBuffer.Count;
+        ImGui.Separator();
+        Assert.True(dl.IdxBuffer.Count >= idxBefore + 6);
+        ImGui.End();
     }
 }

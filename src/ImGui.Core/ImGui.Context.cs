@@ -17,6 +17,7 @@ public sealed class ImGuiContext
     internal ImGuiWindow? CurrentWindow;
     public Stack<ImGuiID> IDStack = new();
     public ImGuiID LastItemID;
+    internal ImGuiNextWindowData NextWindowData;
 
     public ImGuiContext()
     {
@@ -25,6 +26,7 @@ public sealed class ImGuiContext
         Style = new ImGuiStyle();
         FrameCount = 0;
         IDStack.Push(0);
+        NextWindowData.Clear();
     }
 
     internal void EnqueueInputEvent(in ImGuiInputEvent evt)

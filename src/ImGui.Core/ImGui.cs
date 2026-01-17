@@ -44,6 +44,20 @@ public static partial class ImGui
         return ref ctx.Style;
     }
 
+    public static void SetNextWindowPos(ImVec2 pos)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        ctx.NextWindowData.Pos = pos;
+        ctx.NextWindowData.HasPos = true;
+    }
+
+    public static void SetNextWindowSize(ImVec2 size)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        ctx.NextWindowData.Size = size;
+        ctx.NextWindowData.HasSize = true;
+    }
+
     public static void NewFrame()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -151,9 +165,17 @@ public static partial class ImGui
             ctx.Windows.Add(window);
         }
         ctx.CurrentWindow = window;
+        window.ID = ImHash.Hash(name);
         ctx.IDStack.Push(ImHash.Hash(name, ctx.IDStack.Peek()));
         window.DrawList.Clear();
-        window.DC.CursorStartPos = ImVec2.Zero;
+        if (window.Size.x <= 0 && window.Size.y <= 0)
+            window.Size = new ImVec2(400, 400);
+        if (ctx.NextWindowData.HasPos)
+            window.Pos = ctx.NextWindowData.Pos;
+        if (ctx.NextWindowData.HasSize)
+            window.Size = ctx.NextWindowData.Size;
+        ctx.NextWindowData.Clear();
+        window.DC.CursorStartPos = ctx.Style.WindowPadding;
         window.DC.CursorPos = window.DC.CursorStartPos;
         window.DC.LastItemRect = new ImRect(window.DC.CursorPos, window.DC.CursorPos);
         return true;
@@ -188,6 +210,27 @@ public static partial class ImGui
         return ImHash.Hash(label, ctx.IDStack.Peek());
     }
 
+    public static ImDrawList GetWindowDrawList()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return window.DrawList;
+    }
+
+    public static ImVec2 GetWindowPos()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return window.Pos;
+    }
+
+    public static ImVec2 GetWindowSize()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return window.Size;
+    }
+
     public static ImVec2 GetCursorPos()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -200,7 +243,34 @@ public static partial class ImGui
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         window.DC.CursorPos = localPos;
-        window.DC.CursorStartPos = localPos;
+    }
+
+    public static ImVec2 GetCursorScreenPos()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        return new ImVec2(window.Pos.x + window.DC.CursorPos.x, window.Pos.y + window.DC.CursorPos.y);
+    }
+
+    public static void SetCursorScreenPos(ImVec2 screenPos)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        window.DC.CursorPos = new ImVec2(screenPos.x - window.Pos.x, screenPos.y - window.Pos.y);
+    }
+
+    public static ImVec2 GetContentRegionAvail()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var style = ctx.Style;
+        var contentSize = new ImVec2(
+            Math.Max(0, window.Size.x - style.WindowPadding.x * 2),
+            Math.Max(0, window.Size.y - style.WindowPadding.y * 2));
+        var offset = window.DC.CursorPos - window.DC.CursorStartPos;
+        return new ImVec2(
+            Math.Max(0, contentSize.x - offset.x),
+            Math.Max(0, contentSize.y - offset.y));
     }
 
     public static void SameLine(float offset_from_start_x = 0.0f, float spacing = -1.0f)
@@ -224,6 +294,36 @@ public static partial class ImGui
         window.DC.CursorPos = new ImVec2(window.DC.CursorStartPos.x, y);
     }
 
+    public static void Spacing()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        float y = window.DC.CursorPos.y + ctx.Style.ItemSpacing.y;
+        window.DC.CursorPos = new ImVec2(window.DC.CursorStartPos.x, y);
+        window.DC.LastItemRect = new ImRect(window.DC.CursorPos, window.DC.CursorPos);
+    }
+
+    public static void Dummy(ImVec2 size)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var bb = new ImRect(window.DC.CursorPos, new ImVec2(window.DC.CursorPos.x + size.x, window.DC.CursorPos.y + size.y));
+        AdvanceCursorForItem(ctx, window, bb);
+        window.DC.LastItemId = 0;
+    }
+
+    public static void Separator()
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var start = new ImVec2(window.DC.CursorStartPos.x, window.DC.CursorPos.y);
+        var end = new ImVec2(window.Size.x - ctx.Style.WindowPadding.x, window.DC.CursorPos.y + 1.0f);
+        var startScreen = ToScreen(window, start);
+        var endScreen = ToScreen(window, end);
+        window.DrawList.AddRectFilled(startScreen, endScreen, GetColorU32(ImGuiCol_.ImGuiCol_Separator));
+        AdvanceCursorForItem(ctx, window, new ImRect(start, new ImVec2(end.x, end.y)));
+    }
+
     public static void Text(string text) => TextUnformatted(text);
 
     public static void TextUnformatted(string text)
@@ -232,8 +332,9 @@ public static partial class ImGui
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         var size = CalcTextSize(text, ctx);
         var pos = window.DC.CursorPos;
+        var posScreen = ToScreen(window, pos);
         uint col = GetColorU32(ImGuiCol_.ImGuiCol_Text);
-        window.DrawList.AddText(pos, col, text);
+        window.DrawList.AddText(posScreen, col, text);
         AdvanceCursorForItem(ctx, window, new ImRect(pos, new ImVec2(pos.x + size.x, pos.y + size.y)));
         window.DC.LastItemId = 0;
         ctx.LastItemID = 0;
@@ -245,13 +346,16 @@ public static partial class ImGui
         var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
         ImGuiID id = GetID(label);
         var pos = window.DC.CursorPos;
-        var size = new ImVec2(100, 20);
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(label, ctx);
+        var size = new ImVec2(labelSize.x + style.FramePadding.x * 2, labelSize.y + style.FramePadding.y * 2);
         var min = pos;
         var max = new ImVec2(pos.x + size.x, pos.y + size.y);
         var bb = new ImRect(min, max);
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
 
         ref var io = ref ctx.IO;
-        bool hovered = bb.Contains(io.MousePos);
+        bool hovered = bbScreen.Contains(io.MousePos);
         bool pressed = hovered && io.MouseClicked[0];
         uint col = GetColorU32(ImGuiCol_.ImGuiCol_Button);
         if (hovered && io.MouseDown[0])
@@ -259,7 +363,9 @@ public static partial class ImGui
         else if (hovered)
             col = GetColorU32(ImGuiCol_.ImGuiCol_ButtonHovered);
 
-        window.DrawList.AddRectFilled(min, max, col);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, col);
+        var textPos = new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), label);
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, bb);
@@ -294,5 +400,10 @@ public static partial class ImGui
     {
         window.DC.LastItemRect = bb;
         window.DC.CursorPos = new ImVec2(window.DC.CursorStartPos.x, bb.Max.y + ctx.Style.ItemSpacing.y);
+    }
+
+    private static ImVec2 ToScreen(ImGuiWindow window, ImVec2 local)
+    {
+        return new ImVec2(window.Pos.x + local.x, window.Pos.y + local.y);
     }
 }
