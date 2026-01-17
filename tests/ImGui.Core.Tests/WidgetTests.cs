@@ -366,6 +366,22 @@ public class WidgetTests
     }
 
     [Fact]
+    public void Selectable_toggles_selection_on_click()
+    {
+        ImGui.CreateContext();
+        ImGui.Begin("Sel");
+        var pos = ImGui.GetCursorScreenPos();
+        ImGui.AddMousePosEvent(pos.x + 1, pos.y + 1);
+        ImGui.AddMouseButtonEvent(0, true);
+        ImGui.NewFrame();
+        bool selected = false;
+        var pressed = ImGui.Selectable("Item", ref selected);
+        Assert.True(pressed);
+        Assert.True(selected);
+        ImGui.End();
+    }
+
+    [Fact]
     public void CollapsingHeader_toggles_and_persists_state()
     {
         ImGui.CreateContext();
@@ -399,6 +415,39 @@ public class WidgetTests
         Assert.True(open);
         Assert.True(ImGui.IsItemToggledOpen());
         ImGui.TreePop();
+        ImGui.End();
+    }
+
+    [Fact]
+    public void TreeNodeEx_respects_default_open_and_leaf()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Tree");
+        bool open = ImGui.TreeNodeEx("DefaultOpen", ImGuiTreeNodeFlags_.ImGuiTreeNodeFlags_DefaultOpen);
+        Assert.True(open);
+        ImGui.TreePop();
+        ImGui.NewFrame();
+        ImGui.Begin("Tree");
+        bool leafOpen = ImGui.TreeNodeEx("Leaf", ImGuiTreeNodeFlags_.ImGuiTreeNodeFlags_Leaf);
+        Assert.True(leafOpen);
+        Assert.False(ImGui.IsItemToggledOpen());
+        ImGui.End();
+    }
+
+    [Fact]
+    public void TreePush_and_TreePop_adjust_indent()
+    {
+        ImGui.CreateContext();
+        ImGui.NewFrame();
+        ImGui.Begin("Indent");
+        var start = ImGui.GetCursorPos();
+        ImGui.TreePush("scope");
+        var after = ImGui.GetCursorPos();
+        ImGui.TreePop();
+        var end = ImGui.GetCursorPos();
+        Assert.True(after.x > start.x);
+        Assert.Equal(start.x, end.x);
         ImGui.End();
     }
 

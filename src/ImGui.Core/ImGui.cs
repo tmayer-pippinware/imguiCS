@@ -867,6 +867,22 @@ public static partial class ImGui
         }
     }
 
+    public static void TreePush(string str_id)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        ctx.IDStack.Push(ImHash.Hash(str_id, ctx.IDStack.Peek()));
+        window.DC.TreeDepth++;
+        window.DC.IndentX += ctx.Style.IndentSpacing;
+        window.DC.CursorStartPos = new ImVec2(ctx.Style.WindowPadding.x + window.DC.IndentX, window.DC.CursorStartPos.y);
+        window.DC.CursorPos = new ImVec2(window.DC.CursorStartPos.x, window.DC.CursorPos.y);
+    }
+
+    public static void TreePush()
+    {
+        TreePush(string.Empty);
+    }
+
     public static void SetItemDefaultFocus()
     {
         var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
@@ -898,6 +914,77 @@ public static partial class ImGui
         ImGuiID id = GetID(label);
         CollapsingHeaderInternal(label, id, ref open);
         window.StateStorage.SetBool(id, open);
+        return open;
+    }
+
+    public static bool TreeNodeEx(string label, ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_.ImGuiTreeNodeFlags_None)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call CreateContext first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        bool defaultOpen = (flags & ImGuiTreeNodeFlags_.ImGuiTreeNodeFlags_DefaultOpen) != 0;
+        bool leaf = (flags & ImGuiTreeNodeFlags_.ImGuiTreeNodeFlags_Leaf) != 0;
+        bool framed = (flags & ImGuiTreeNodeFlags_.ImGuiTreeNodeFlags_Framed) != 0;
+        bool open = window.StateStorage.GetBool(id, defaultOpen);
+        if (leaf)
+            open = true;
+
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        float height = framed ? (style.FramePadding.y * 2 + style.FontSizeBase) : GetTextLineHeightWithSpacing();
+        var pos = window.DC.CursorPos;
+        float padding = framed ? style.FramePadding.x : 0;
+        var bb = new ImRect(pos, new ImVec2(pos.x + labelSize.x + padding * 2 + height, pos.y + height));
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+
+        ref var io = ref ctx.IO;
+        bool disabled = ctx.DisabledDepth > 0;
+        bool hovered = !disabled && bbScreen.Contains(io.MousePos);
+        bool pressed = hovered && io.MouseClicked[0] && !leaf;
+        _lastItemToggledOpen = false;
+        if (hovered && !disabled)
+            ctx.HoveredId = id;
+        if (pressed && !disabled)
+        {
+            ctx.ActiveId = id;
+            ctx.ActiveIdMouseButton = 0;
+            ctx.ActiveIdJustActivated = true;
+            open = !open;
+            _lastItemToggledOpen = true;
+        }
+        if (ctx.ActiveId == id && io.MouseReleased[0])
+        {
+            ctx.ActiveId = 0;
+            ctx.ActiveIdMouseButton = -1;
+        }
+
+        uint bg = framed ? GetColorU32(ImGuiCol_.ImGuiCol_Header) : GetColorU32(ImGuiCol_.ImGuiCol_WindowBg);
+        if (framed)
+        {
+            if (hovered && io.MouseDown[0]) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderActive);
+            else if (hovered) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderHovered);
+            window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, bg);
+        }
+
+        string arrow = leaf ? " " : (open ? "v " : "> ");
+        var textPos = new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), arrow + visibleLabel);
+
+        window.StateStorage.SetBool(id, open);
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        if (ctx.NavInitRequest && ctx.NavInitResultId == 0)
+            ctx.NavInitResultId = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        if (open && !leaf)
+        {
+            window.DC.TreeDepth++;
+            window.DC.IndentX += style.IndentSpacing;
+            window.DC.CursorStartPos = new ImVec2(style.WindowPadding.x + window.DC.IndentX, window.DC.CursorStartPos.y);
+            window.DC.CursorPos = new ImVec2(window.DC.CursorStartPos.x, window.DC.CursorPos.y);
+        }
+        ctx.NextItemData.Clear();
         return open;
     }
 
@@ -1007,6 +1094,52 @@ public static partial class ImGui
                 GetColorU32(ImGuiCol_.ImGuiCol_CheckMark));
         }
         window.DrawList.AddText(textPos + window.Pos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+        window.DC.LastItemId = id;
+        ctx.LastItemID = id;
+        AdvanceCursorForItem(ctx, window, bb);
+        ctx.NextItemData.Clear();
+        return pressed;
+    }
+
+    public static bool Selectable(string label, ImGuiSelectableFlags_ flags = ImGuiSelectableFlags_.ImGuiSelectableFlags_None, ImVec2? size = null)
+    {
+        bool selected = false;
+        return Selectable(label, ref selected, flags, size);
+    }
+
+    public static bool Selectable(string label, ref bool selected, ImGuiSelectableFlags_ flags = ImGuiSelectableFlags_.ImGuiSelectableFlags_None, ImVec2? size = null)
+    {
+        var ctx = _currentContext ?? throw new InvalidOperationException("No current ImGui context. Call Begin() first.");
+        var window = ctx.CurrentWindow ?? throw new InvalidOperationException("No current window. Call Begin() first.");
+        var visibleLabel = GetLabelText(label);
+        ImGuiID id = GetID(label);
+        var style = ctx.Style;
+        var labelSize = CalcTextSize(visibleLabel, ctx, hideTextAfterDoubleHash: false);
+        var itemSize = new ImVec2(
+            size?.x > 0 ? size.Value.x : labelSize.x + style.FramePadding.x * 2,
+            size?.y > 0 ? size.Value.y : Math.Max(labelSize.y + style.FramePadding.y * 2, GetTextLineHeight()));
+        var pos = window.DC.CursorPos;
+        var bb = new ImRect(pos, new ImVec2(pos.x + itemSize.x, pos.y + itemSize.y));
+        if (!ItemAdd(ctx, window, bb, id))
+        {
+            ItemSize(ctx, window, itemSize);
+            ctx.NextItemData.Clear();
+            return false;
+        }
+        var bbScreen = new ImRect(ToScreen(window, bb.Min), ToScreen(window, bb.Max));
+        bool disabled = ctx.DisabledDepth > 0;
+        bool hovered, held, pressed;
+        ButtonBehavior(ctx, bbScreen, id, out hovered, out held, out pressed, disabled);
+        if (pressed && !disabled)
+            selected = !selected;
+
+        uint bg = selected ? GetColorU32(ImGuiCol_.ImGuiCol_Header) : GetColorU32(ImGuiCol_.ImGuiCol_WindowBg);
+        if (hovered && ctx.IO.MouseDown[0]) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderActive);
+        else if (hovered) bg = GetColorU32(ImGuiCol_.ImGuiCol_HeaderHovered);
+        window.DrawList.AddRectFilled(bbScreen.Min, bbScreen.Max, bg);
+        var textPos = new ImVec2(bbScreen.Min.x + style.FramePadding.x, bbScreen.Min.y + style.FramePadding.y);
+        window.DrawList.AddText(textPos, GetColorU32(ImGuiCol_.ImGuiCol_Text), visibleLabel);
+
         window.DC.LastItemId = id;
         ctx.LastItemID = id;
         AdvanceCursorForItem(ctx, window, bb);
